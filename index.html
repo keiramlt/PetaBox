@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>petabox</title>
+<!-- github pages can't send headers, so the content security policy goes here. if you change the api address, change it here too -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://kei.mt http://localhost:3000; frame-src https://challenges.cloudflare.com; worker-src 'self'; object-src 'none'; base-uri 'none'">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 15px; background: #111; color: #d0d0d0; min-height: 100vh; padding: 24px 20px 48px; }
+a { color: #bbb; } a:hover { color: #fff; }
+.wrap { width: 100%; max-width: 560px; margin: 0 auto; } .wrap.wide { max-width: 900px; }
+nav { display: flex; align-items: center; gap: 16px; margin-bottom: 40px; font-size: .85rem; }
+nav .brand { font-weight: 700; color: #fff; text-decoration: none; font-size: 1rem; margin-right: auto; }
+nav a, nav button.link { color: #888; text-decoration: none; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+nav a:hover, nav button.link:hover { color: #fff; background: none; }
+h1 { font-size: 1.15rem; font-weight: 600; margin-bottom: 4px; color: #fff; }
+h2 { font-size: .95rem; font-weight: 600; color: #fff; margin: 24px 0 8px; }
+.sub { color: #666; font-size: .82rem; margin-bottom: 28px; line-height: 1.5; }
+p { line-height: 1.5; margin-bottom: 10px; }
+.small { font-size: .78rem; color: #666; } .foot { margin-top: 40px; }
+.drop { border: 1.5px dashed #2e2e2e; border-radius: 8px; padding: 32px 20px; text-align: center; color: #666; font-size: .85rem; cursor: pointer; position: relative; }
+.drop:hover, .drop.over { border-color: #555; color: #999; }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.drop .picked { margin-top: 8px; font-size: .78rem; color: #999; min-height: 1em; word-break: break-all; }
+label.field { display: block; margin-top: 16px; font-size: .78rem; color: #777; }
+select, input[type=text], input[type=password] { display: block; width: 100%; margin-top: 6px; padding: 9px 10px; border-radius: 6px; border: 1.5px solid #2e2e2e; background: #161616; color: #ddd; font: inherit; font-size: .85rem; }
+select:focus, input:focus { outline: none; border-color: #666; }
+.check { display: flex; gap: 8px; align-items: center; margin-top: 14px; font-size: .8rem; color: #999; }
+.actions { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+button { padding: 9px 18px; border-radius: 6px; border: 1.5px solid #2e2e2e; background: #1a1a1a; color: #aaa; cursor: pointer; font-size: .82rem; font-family: inherit; }
+button:hover:not(:disabled) { background: #222; border-color: #444; color: #ddd; }
+button.primary { background: #e0e0e0; color: #111; border-color: #e0e0e0; }
+button.primary:hover:not(:disabled) { background: #fff; border-color: #fff; color: #111; }
+button.danger:hover:not(:disabled) { border-color: #7a2a2a; color: #e08a8a; }
+button.sm { padding: 4px 10px; font-size: .74rem; }
+button:disabled { opacity: .35; cursor: not-allowed; }
+.progress { display: none; margin-top: 20px; }
+.track { height: 3px; background: #222; border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.fill { height: 100%; width: 0; background: #e0e0e0; }
+.stats { display: flex; gap: 16px; font-size: .75rem; color: #555; flex-wrap: wrap; } .stats b { color: #999; font-weight: 500; }
+.msg { padding: 10px 14px; border-radius: 6px; font-size: .82rem; margin-top: 16px; line-height: 1.5; }
+.msg.err { background: #1f0e0e; border: 1px solid #3a1a1a; color: #bf6a6a; }
+.msg.ok { background: #0e1f0e; border: 1px solid #1a3a1a; color: #6abf6a; }
+.msg.info { background: #161616; border: 1px solid #2a2a2a; color: #999; }
+.msg.warn { background: #1f1a0e; border: 1px solid #3a3017; color: #bfa56a; }
+.result { margin-top: 20px; } .result-item { margin-top: 14px; }
+.result-name { font-size: .82rem; color: #888; margin-bottom: 6px; word-break: break-all; }
+.result-link { display: flex; align-items: center; gap: 8px; background: #161616; border: 1.5px solid #2a2a2a; border-radius: 6px; padding: 10px 12px; }
+.result-link code { flex: 1; font-size: .72rem; word-break: break-all; color: #888; }
+.card { border: 1.5px solid #222; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: #161616; }
+.card .name { font-weight: 600; margin-bottom: 4px; word-break: break-all; color: #fff; } .card .meta { font-size: .78rem; color: #666; }
+.tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid #222; }
+.tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 14px; }
+.tabs button.active { color: #fff; border-bottom-color: #e0e0e0; }
+.recovery { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 1rem; background: #161616; border: 1.5px solid #3a3017; border-radius: 6px; padding: 16px; word-break: break-word; color: #e8d9a8; line-height: 1.7; user-select: all; }
+table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+th { text-align: left; font-weight: 500; color: #666; font-size: .72rem; padding: 6px 8px; border-bottom: 1px solid #222; }
+td { padding: 10px 8px; border-bottom: 1px solid #1c1c1c; vertical-align: middle; }
+td.name { word-break: break-all; color: #ddd; max-width: 260px; } td.acts { white-space: nowrap; text-align: right; } td.acts button { margin-left: 4px; }
+td select { margin: 0; padding: 4px 6px; font-size: .75rem; width: auto; display: inline-block; }
+.badge { font-size: .68rem; padding: 2px 7px; border-radius: 10px; border: 1px solid #333; color: #888; white-space: nowrap; }
+.badge.on { border-color: #2a4a2a; color: #6abf6a; }
+.hidden { display: none !important; }
+@media (max-width: 640px) { th:nth-child(3), td:nth-child(3) { display: none; } }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <nav id="nav"></nav>
+
+  <!-- upload: / -->
+  <section id="v-upload" class="hidden">
+    <h1>Upload</h1>
+    <p class="sub" id="up-sub"></p>
+    <div class="drop" id="drop"><input type="file" id="file" multiple>Drop files here, or click to choose<div class="picked" id="picked"></div></div>
+    <label class="field">Keep the file for <select id="expiry"></select></label>
+    <label class="check hidden" id="pubRow"><input type="checkbox" id="pub" checked> Anyone with the link can download (you can change this later in My files)</label>
+    <div id="ts"></div>
+    <div class="actions"><button class="primary" id="btn">Upload</button><button id="cancel" disabled>Cancel</button></div>
+    <div class="progress" id="prog">
+      <div class="track"><div class="fill" id="fill"></div></div>
+      <div class="stats"><span><b id="ppct">0%</b></span><span><b id="psent">0 B</b> / <b id="ptotal">0 B</b></span><span><b id="pspeed">-</b></span><span>ETA <b id="peta">-</b></span><span id="pstatus"></span></div>
+    </div>
+    <div class="result" id="result"></div>
+    <p class="small foot"><a href="/?terms">Terms &amp; abuse reports</a></p>
+  </section>
+
+  <!-- download: /?d=<id>#<key> -->
+  <section id="v-download" class="hidden">
+    <h1>Download</h1>
+    <p class="sub">Decrypted in your browser. The server only holds scrambled data.</p>
+    <div class="card"><div class="name" id="fname">Loading...</div><div class="meta" id="fmeta"></div></div>
+    <div class="progress" id="d-prog"><div class="track"><div class="fill" id="d-fill"></div></div><div class="stats"><span><b id="d-pct">0%</b></span><span id="d-status"></span></div></div>
+    <div id="d-out"></div>
+    <div class="actions"><button class="primary" id="dl" disabled>Download</button></div>
+  </section>
+
+  <!-- login, signup, recover: /login -->
+  <section id="v-login" class="hidden">
+    <div class="tabs" id="tabs"><button data-tab="login" class="active">Log in</button><button data-tab="signup">Create account</button><button data-tab="recover">Forgot password</button></div>
+    <form id="login">
+      <h1>Log in</h1><p class="sub">An account is optional. It lets you upload bigger files, keep them forever, and manage them in one place.</p>
+      <label class="field">Username <input type="text" id="l-user" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+      <label class="field">Password <input type="password" id="l-pass" autocomplete="current-password"></label>
+      <div class="actions"><button class="primary" type="submit">Log in</button></div>
+    </form>
+    <form id="signup" class="hidden">
+      <h1>Create account</h1><p class="sub">No email needed. Just a username and a password.</p>
+      <label class="field">Username (a-z, 0-9, _ . -) <input type="text" id="s-user" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+      <label class="field">Password (at least 10 characters) <input type="password" id="s-pass" autocomplete="new-password"></label>
+      <label class="field">Repeat password <input type="password" id="s-pass2" autocomplete="new-password"></label>
+      <div class="msg warn">Your files are encrypted with a key made from your password. Nobody, including the site owner, can reset it for you. You will get a <b>recovery key</b> on the next screen. Save it, it is the only way back in if you forget your password.</div>
+      <div id="s-ts"></div>
+      <div class="actions"><button class="primary" type="submit">Create account</button></div>
+    </form>
+    <div id="recovery" class="hidden">
+      <h1>Save your recovery key</h1><p class="sub">This is shown only once. If you forget your password, this key is the only way to get your files back.</p>
+      <div class="recovery" id="rk"></div>
+      <div class="actions"><button id="rk-copy">Copy</button><button id="rk-save">Download as .txt</button></div>
+      <label class="check"><input type="checkbox" id="rk-ok"> I have saved my recovery key somewhere safe</label>
+      <div class="actions"><button class="primary" id="rk-go" disabled>Continue</button></div>
+    </div>
+    <form id="recover" class="hidden">
+      <h1>Forgot password</h1><p class="sub">Use the recovery key you saved when you created your account to set a new password.</p>
+      <label class="field">Username <input type="text" id="r-user" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+      <label class="field">Recovery key <input type="text" id="r-key" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-..."></label>
+      <label class="field">New password (at least 10 characters) <input type="password" id="r-pass" autocomplete="new-password"></label>
+      <div class="actions"><button class="primary" type="submit">Set new password</button></div>
+    </form>
+    <div id="l-out"></div>
+  </section>
+
+  <!-- my files: /dashboard -->
+  <section id="v-dashboard" class="hidden">
+    <h1>My files</h1>
+    <p class="sub" id="dash-sub">Only you can see this list. File names are encrypted, the server can't read them.</p>
+    <div id="gate"></div><div id="dash-out"></div>
+    <table id="tbl" class="hidden"><thead><tr><th>Name</th><th>Size</th><th>Expires</th><th>Keep for</th><th></th></tr></thead><tbody id="rows"></tbody></table>
+    <p id="empty" class="small hidden">No files yet. <a href="/">Upload something.</a></p>
+    <h2>Change password</h2>
+    <form id="pwform">
+      <label class="field">Current password <input type="password" id="pw-old" autocomplete="current-password"></label>
+      <label class="field">New password (at least 10 characters) <input type="password" id="pw-new" autocomplete="new-password"></label>
+      <div class="actions"><button type="submit">Change password</button></div>
+    </form>
+    <div id="pwout"></div>
+  </section>
+
+  <!-- terms: /terms -->
+  <section id="v-terms" class="hidden">
+    <h1>Terms &amp; abuse reports</h1>
+    <p class="sub">EDIT THIS TEXT before launch (search for "abuse@" in index.html). It is a starting point, not legal advice.</p>
+    <h2>How it works</h2><p>Files are encrypted in your browser before upload. The operator cannot read file contents, names or decryption keys, and cannot recover a lost link or a lost password and recovery key.</p>
+    <h2>What you may not upload</h2><p>Anything illegal where the operator lives or where you live, including child sexual abuse material, malware used to attack others, and content you do not have the right to share.</p>
+    <h2>Reporting abuse / takedowns</h2><p>Send the file ID (the part of the link after <code>?d=</code> and before <code>#</code>; never send the part after the #) to: <b>abuse@your-domain.example</b> (REPLACE ME). The operator can delete a file by its ID without being able to read it.</p>
+    <h2>No guarantees</h2><p>Files may be lost or deleted at any time. Keep a copy of anything important. Files are deleted automatically when their chosen time runs out.</p>
+  </section>
+</div>
+
+<script src="/argon2.min.js"></script>
+<script type="module">
+// --- crypto (all of this runs in the browser, the server never sees plaintext) ---
+const TAG = 16;                 // gcm tag, added to every chunk
+const enc = new TextEncoder(), dec = new TextDecoder(), subtle = crypto.subtle;
+const rand = (n) => crypto.getRandomValues(new Uint8Array(n));
+
+function b64u(bytes) {
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 8192) s += String.fromCharCode(...bytes.subarray(i, i + 8192));
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function unb64u(str) {
+  const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+}
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function base32(bytes) {
+  let bits = 0, val = 0, out = '';
+  for (const b of bytes) { val = (val << 8) | b; bits += 8; while (bits >= 5) { out += B32[(val >>> (bits - 5)) & 31]; bits -= 5; } }
+  return bits ? out + B32[(val << (5 - bits)) & 31] : out;
+}
+function unbase32(str) {
+  let bits = 0, val = 0; const out = [];
+  for (const ch of str) {
+    const i = B32.indexOf(ch);
+    if (i < 0) throw new Error('Invalid recovery key.');
+    val = (val << 5) | i; bits += 5;
+    if (bits >= 8) { out.push((val >>> (bits - 8)) & 255); bits -= 8; }
+  }
+  return new Uint8Array(out);
+}
+async function hkdf(ikm, info) {
+  const k = await subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
+  return new Uint8Array(await subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(32), info: enc.encode(info) }, k, 256));
+}
+const aesKey = (raw) => subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']);
+
+// each file gets its own random key. we split it into one for the data and one for the name/metadata
+const newFileKey = () => rand(32);
+const chunkCount = (size, chunk) => Math.max(1, Math.ceil(size / chunk));
+async function fileKeys(fileKey) {
+  return { data: await aesKey(await hkdf(fileKey, 'petabox-data-v1')), meta: await aesKey(await hkdf(fileKey, 'petabox-meta-v1')) };
+}
+// nonce is just the chunk number (fine, every file has its own key). the aad pins each chunk to its
+// position and says whether it's the last one, so reordering, repeating or chopping off chunks breaks decryption
+const nonce = (i) => { const n = new Uint8Array(12); new DataView(n.buffer).setUint32(8, i); return n; };
+const aad = (i, last) => { const a = new Uint8Array(5); new DataView(a.buffer).setUint32(0, i); a[4] = last ? 1 : 0; return a; };
+const encryptChunk = async (key, i, last, plain) => new Uint8Array(await subtle.encrypt({ name: 'AES-GCM', iv: nonce(i), additionalData: aad(i, last) }, key, plain));
+const decryptChunk = async (key, i, last, ct) => new Uint8Array(await subtle.decrypt({ name: 'AES-GCM', iv: nonce(i), additionalData: aad(i, last) }, key, ct));
+
+async function encryptMeta(key, obj) {
+  const iv = rand(12), ct = new Uint8Array(await subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(JSON.stringify(obj))));
+  return b64u(Uint8Array.from([...iv, ...ct]));
+}
+async function decryptMeta(key, str) {
+  const raw = unb64u(str);
+  return JSON.parse(dec.decode(await subtle.decrypt({ name: 'AES-GCM', iv: raw.slice(0, 12) }, key, raw.slice(12))));
+}
+
+// password -> 64 bytes with argon2id (slow and memory hungry on purpose, makes guessing expensive).
+// first half is the login key (server hashes it again), second half never leaves the browser and unlocks the master key
+async function deriveFromPassword(password, salt) {
+  const out = await hashwasm.argon2id({
+    password: password.normalize('NFKC'), salt, parallelism: 1, iterations: 3, memorySize: 65536, hashLength: 64, outputType: 'binary',
+  });
+  return { authKey: out.slice(0, 32), wrapKey: out.slice(32) };
+}
+async function wrap(keyBytes, data, label) {
+  const iv = rand(12), ct = new Uint8Array(await subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(label) }, await aesKey(keyBytes), data));
+  return b64u(Uint8Array.from([...iv, ...ct]));
+}
+async function unwrap(keyBytes, str, label) {
+  const raw = unb64u(str);
+  return new Uint8Array(await subtle.decrypt({ name: 'AES-GCM', iv: raw.slice(0, 12), additionalData: enc.encode(label) }, await aesKey(keyBytes), raw.slice(12)));
+}
+const recoveryKeys = async (r) => ({ wrapKey: await hkdf(r, 'petabox-rec-wrap'), authKey: await hkdf(r, 'petabox-rec-auth') });
+const formatRecovery = (bytes) => base32(bytes).match(/.{1,4}/g).join('-');
+function parseRecovery(str) {
+  const b = unbase32(str.toUpperCase().replace(/[^A-Z2-7]/g, ''));
+  if (b.length !== 32) throw new Error('That recovery key looks incomplete.');
+  return b;
+}
+// signup: random master key, locked once with the password and once with a recovery key
+async function makeAccount(password) {
+  const salt = rand(16), masterKey = rand(32), recovery = rand(32);
+  const { authKey, wrapKey } = await deriveFromPassword(password, salt), rec = await recoveryKeys(recovery);
+  return {
+    masterKey, recoveryKey: formatRecovery(recovery),
+    send: { salt: b64u(salt), authKey: b64u(authKey), recoveryAuth: b64u(rec.authKey),
+      wrappedMasterPw: await wrap(wrapKey, masterKey, 'master-pw'), wrappedMasterRec: await wrap(rec.wrapKey, masterKey, 'master-rec') },
+  };
+}
+async function rewrapMaster(masterKey, newPassword) {
+  const salt = rand(16), { authKey, wrapKey } = await deriveFromPassword(newPassword, salt);
+  return { salt: b64u(salt), authKey: b64u(authKey), wrappedMasterPw: await wrap(wrapKey, masterKey, 'master-pw') };
+}
+async function recoverAccount(recoveryStr, wrappedMasterRec, newPassword) {
+  const rec = await recoveryKeys(parseRecovery(recoveryStr));
+  const masterKey = await unwrap(rec.wrapKey, wrappedMasterRec, 'master-rec'); // throws if the recovery key is wrong
+  return { masterKey, send: { ...(await rewrapMaster(masterKey, newPassword)), recoveryAuth: b64u(rec.authKey) } };
+}
+// file keys live on the server but are locked with the master key
+const wrapFileKey = async (master, fk) => wrap(await hkdf(master, 'petabox-filekeys'), fk, 'filekey');
+const unwrapFileKey = async (master, w) => unwrap(await hkdf(master, 'petabox-filekeys'), w, 'filekey');
+
+// --- helpers ---
+const $ = (id) => document.getElementById(id);
+function el(tag, props = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) k.startsWith('on') ? n.addEventListener(k.slice(2), v) : n.setAttribute(k, v);
+  n.append(...kids.flat().filter((x) => x != null));
+  return n;
+}
+function fmt(b) { const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0; while (b >= 1024 && i < 4) { b /= 1024; i++; } return (i ? b.toFixed(2) : b.toFixed(0)) + ' ' + u[i]; }
+function fmtTime(s) { if (!isFinite(s) || s < 0) return '-'; s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return h ? `${h}h ${m}m` : m ? `${m}m ${s % 60}s` : `${s}s`; }
+function timeLeft(iso) {
+  if (!iso) return 'Never';
+  const s = (new Date(iso) - Date.now()) / 1000;
+  return s <= 0 ? 'Expired' : s < 3600 ? Math.ceil(s / 60) + ' min' : s < 86400 ? Math.floor(s / 3600) + ' h' : Math.floor(s / 86400) + ' days';
+}
+const LABELS = { '1h': '1 hour', '6h': '6 hours', '1d': '1 day', '3d': '3 days', '7d': '1 week', '14d': '2 weeks', '30d': '1 month', '90d': '3 months', '180d': '6 months', '365d': '1 year', never: 'Never (keep forever)' };
+const message = (box, kind, text) => box.replaceChildren(el('div', { class: 'msg ' + kind }, text));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// where the backend lives (a php file on the main site, like strife). change this if you move it
+const API = location.hostname === 'localhost' ? 'http://localhost:3000/api.php' : 'https://kei.mt/petabox/api.php';
+
+async function api(action, { body, query = '', headers = {}, signal } = {}) {
+  const res = await fetch(`${API}?action=${action}${query}`, {
+    method: body !== undefined ? 'POST' : 'GET', signal, credentials: 'include',
+    headers: { ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...headers },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  let data = null; try { data = await res.json(); } catch { /* empty */ }
+  if (!res.ok) throw Object.assign(new Error(data?.error || `Request failed (${res.status})`), { status: res.status });
+  return data;
+}
+// the master key only lives in this tab (sessionStorage), the server never gets it
+const getMaster = () => { try { const v = sessionStorage.getItem('pb_mk'); return v ? unb64u(v) : null; } catch { return null; } };
+const setMaster = (k) => { try { sessionStorage.setItem('pb_mk', b64u(k)); } catch { /* private mode */ } };
+
+const cfg = await api('config');
+let user = null;
+try { user = await api('me'); } catch { /* not logged in */ }
+
+// no master key in this tab yet (reload or new tab) so ask for the password again
+function ensureMaster(box) {
+  const have = getMaster();
+  if (have) return Promise.resolve(have);
+  return new Promise((resolve) => {
+    const pw = el('input', { type: 'password', placeholder: 'Your password', autocomplete: 'current-password' }), err = el('div'), go = el('button', { class: 'primary' }, 'Unlock');
+    const card = el('div', { class: 'card' }, el('div', { class: 'name' }, 'Unlock your files'),
+      el('p', { class: 'small' }, 'Your files are locked with a key that only exists in your browser. Enter your password to unlock it for this tab.'), pw, err, el('div', { class: 'actions' }, go));
+    const submit = async () => {
+      go.disabled = true; message(err, 'info', 'Unlocking...');
+      try { const { wrapKey } = await deriveFromPassword(pw.value, unb64u(user.salt)); const mk = await unwrap(wrapKey, user.wrappedMasterPw, 'master-pw'); setMaster(mk); card.remove(); resolve(mk); }
+      catch { message(err, 'err', 'Wrong password.'); go.disabled = false; }
+    };
+    go.onclick = submit; pw.addEventListener('keydown', (e) => e.key === 'Enter' && submit());
+    box.replaceChildren(card); pw.focus();
+  });
+}
+// turnstile captcha, only if the keys are set on the server
+async function mountTurnstile(box) {
+  if (!cfg.turnstileSiteKey) return { token: () => '', reset() {} };
+  await new Promise((ok, no) => { const s = el('script', { src: 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit' }); s.onload = ok; s.onerror = no; document.head.append(s); });
+  const id = turnstile.render(box, { sitekey: cfg.turnstileSiteKey, theme: 'dark' });
+  return { token: () => turnstile.getResponse(id) || '', reset: () => turnstile.reset(id) };
+}
+
+// --- nav, and picking which page to show ---
+document.title = cfg.siteName;
+$('nav').replaceChildren(
+  el('a', { class: 'brand', href: '/' }, cfg.siteName), el('a', { href: '/' }, 'Upload'),
+  ...(user ? [el('a', { href: '/?dashboard' }, 'My files'),
+    el('button', { class: 'link', onclick: async () => { try { await api('logout', { body: {} }); } catch { /* */ } sessionStorage.clear(); location.href = '/'; } }, `Log out (${user.username})`)]
+    : [el('a', { href: '/?login' }, 'Log in / Sign up')]));
+
+// github pages can't do /d/abc style addresses, so the page is picked from the query: /?d=<id>  /?login  /?dashboard  /?terms
+const query = new URLSearchParams(location.search);
+const view = query.has('d') ? 'download' : ['login', 'dashboard', 'terms'].find((v) => query.has(v)) || 'upload';
+$('v-' + view).classList.remove('hidden');
+if (view === 'dashboard') $('app').classList.add('wide');
+
+// --- upload page ---
+async function uploadPage() {
+  const GB = 1024 ** 3, PARALLEL = 4, result = $('result');
+  const ts = await mountTurnstile($('ts'));
+  let master = user ? getMaster() : null, files = [], aborter = null, cancelled = false;
+
+  $('expiry').replaceChildren(...(user ? cfg.userExpiry : cfg.anonExpiry).map((k) => el('option', { value: k }, LABELS[k] || k)));
+  $('expiry').value = user ? '30d' : '1d';
+  if (user) {
+    $('up-sub').textContent = `Logged in as ${user.username}. Up to ${cfg.maxUser / GB} GB per file, no storage limit, keep files as long as you like. Everything is encrypted in your browser first.`;
+    $('pubRow').classList.remove('hidden');
+  } else $('up-sub').textContent = `Files are encrypted in your browser before they leave your device. Up to ${cfg.maxAnon / GB} GB per file, kept for up to 1 month. Log in for ${cfg.maxUser / GB} GB files and unlimited storage time.`;
+
+  const setFiles = (list) => { files = [...list]; $('picked').textContent = files.map((f) => `${f.name} (${fmt(f.size)})`).join(', '); };
+  $('drop').addEventListener('dragover', (e) => { e.preventDefault(); $('drop').classList.add('over'); });
+  $('drop').addEventListener('dragleave', () => $('drop').classList.remove('over'));
+  $('drop').addEventListener('drop', (e) => { e.preventDefault(); $('drop').classList.remove('over'); setFiles(e.dataTransfer.files); });
+  $('file').addEventListener('change', () => setFiles($('file').files));
+  $('cancel').addEventListener('click', () => { cancelled = true; aborter?.abort(); });
+
+  // xhr instead of fetch because fetch can't do upload progress
+  const putChunk = (id, token, n, body, onProgress, signal) => new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open('POST', `${API}?action=upload_chunk&id=${id}&n=${n}`); x.withCredentials = true;
+    x.setRequestHeader('Content-Type', 'application/octet-stream'); x.setRequestHeader('X-Upload-Token', token);
+    x.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded);
+    x.onload = () => {
+      if (x.status === 200) return resolve();
+      let m = 'Upload failed'; try { m = JSON.parse(x.responseText).error || m; } catch { /* */ }
+      reject(Object.assign(new Error(m), { fatal: x.status >= 400 && x.status < 500 && x.status !== 408 && x.status !== 429 }));
+    };
+    x.onerror = () => reject(new Error('Network error')); x.onabort = () => reject(new Error('Cancelled'));
+    signal.addEventListener('abort', () => x.abort(), { once: true });
+    x.send(body);
+  });
+
+  // if an upload fails, picking the same file again carries on where it stopped. the key is kept in this browser only
+  const rKey = (f) => `pb_resume:${f.name}:${f.size}:${f.lastModified}`;
+  const readResume = (f) => { try { return JSON.parse(localStorage.getItem(rKey(f))); } catch { return null; } };
+  const saveResume = (f, v) => { try { localStorage.setItem(rKey(f), JSON.stringify(v)); } catch { /* */ } };
+  const dropResume = (f) => { try { localStorage.removeItem(rKey(f)); } catch { /* */ } };
+
+  async function uploadOne(f, label) {
+    const status = (t) => ($('pstatus').textContent = t);
+    let fileKey, id, token, ch, received = new Set();
+    const rec = readResume(f);
+    if (rec && rec.user === (user?.username || '')) {
+      try { const st = await api('upload_status', { query: `&id=${rec.id}`, headers: { 'X-Upload-Token': rec.token } }); fileKey = new Uint8Array(rec.key); id = rec.id; token = rec.token; ch = st.chunkSize; received = new Set(st.received); status('Resuming...'); }
+      catch { dropResume(f); }
+    }
+    const keys = await fileKeys(fileKey ||= newFileKey());
+    if (!id) {
+      status('Preparing...');
+      const body = { size: f.size, expiry: $('expiry').value, public: user ? $('pub').checked : true, turnstile: ts.token(),
+        encMeta: await encryptMeta(keys.meta, { name: f.name, type: f.type || '', size: f.size }) };
+      if (user) body.wrappedKey = await wrapFileKey(master, fileKey);
+      else if (cfg.turnstileSiteKey && !body.turnstile) throw Object.assign(new Error('Please complete the captcha above first.'), { fatal: true });
+      const r = await api('upload_create', { body, signal: aborter.signal });
+      ts.reset(); id = r.id; token = r.uploadToken; ch = r.chunkSize;
+      saveResume(f, { id, token, key: [...fileKey], user: user?.username || '' });
+    }
+    // progress
+    const total = chunkCount(f.size, ch), encTotal = f.size + total * TAG;
+    const sent = new Array(total).fill(0);
+    for (const n of received) sent[n] = n < total - 1 ? ch + TAG : f.size - n * ch + TAG;
+    const t0 = Date.now(), base = sent.reduce((a, b) => a + b, 0);
+    const update = () => {
+      const done = sent.reduce((a, b) => a + b, 0), p = (done / encTotal) * 100, dt = (Date.now() - t0) / 1000;
+      $('fill').style.width = p + '%'; $('ppct').textContent = p.toFixed(1) + '%'; $('psent').textContent = fmt(done); $('ptotal').textContent = fmt(encTotal);
+      if (dt > 0.5 && done > base) { const sp = (done - base) / dt; $('pspeed').textContent = fmt(sp) + '/s'; $('peta').textContent = fmtTime((encTotal - done) / sp); }
+    };
+    update();
+    // a few workers, each one reads a chunk, encrypts it, uploads it. keeps memory low even for 10 GB
+    const todo = []; for (let n = 0; n < total; n++) if (!received.has(n)) todo.push(n);
+    let failure = null;
+    async function worker() {
+      while (todo.length && !failure && !cancelled) {
+        const n = todo.shift(), start = n * ch;
+        const ct = await encryptChunk(keys.data, n, n === total - 1, new Uint8Array(await f.slice(start, Math.min(start + ch, f.size)).arrayBuffer()));
+        for (let attempt = 1; ; attempt++) {
+          try { await putChunk(id, token, n, new Blob([ct]), (l) => { sent[n] = l; update(); }, aborter.signal); sent[n] = ct.length; update(); break; }
+          catch (e) {
+            if (cancelled || e.fatal || attempt >= 5) { failure ||= e; return; }
+            sent[n] = 0; status(`Connection problem, retrying part ${n + 1} (${attempt}/4)...`); await sleep(1000 * attempt * attempt);
+          }
+        }
+      }
+    }
+    status(label + 'Uploading...');
+    await Promise.all(Array.from({ length: Math.min(PARALLEL, todo.length) }, worker));
+    if (cancelled) throw new Error('Cancelled');
+    if (failure) throw failure;
+    status('Finishing...');
+    await api('upload_finish', { body: {}, query: `&id=${id}`, headers: { 'X-Upload-Token': token } });
+    dropResume(f);
+    return `${location.origin}/?d=${id}#${b64u(fileKey)}`;  // key goes after the #, browsers never send that part to the server
+  }
+
+  $('btn').addEventListener('click', async () => {
+    if (!files.length) return message(result, 'err', 'Please choose a file first.');
+    if (user && !master) { $('btn').disabled = true; master = await ensureMaster(result); $('btn').disabled = false; }
+    result.replaceChildren(); $('prog').style.display = 'block'; $('btn').disabled = true; $('cancel').disabled = false; cancelled = false;
+    let ok = 0;
+    for (const [i, f] of files.entries()) {
+      aborter = new AbortController();
+      try {
+        const link = await uploadOne(f, files.length > 1 ? `File ${i + 1}/${files.length}: ` : '');
+        const copy = el('button', { class: 'sm' }, 'Copy');
+        copy.onclick = () => navigator.clipboard.writeText(link).then(() => { copy.textContent = 'Copied'; setTimeout(() => (copy.textContent = 'Copy'), 2000); });
+        result.append(el('div', { class: 'result-item' }, el('div', { class: 'result-name' }, `${f.name} - ${fmt(f.size)}`), el('div', { class: 'result-link' }, el('code', {}, link), copy)));
+        ok++;
+      } catch (e) { result.append(el('div', { class: 'msg err' }, `${f.name}: ${cancelled ? 'Cancelled' : e.message}`)); if (cancelled) break; }
+    }
+    $('btn').disabled = false; $('cancel').disabled = true; $('pstatus').textContent = ok === files.length ? 'Done' : '';
+    if (ok) result.prepend(el('div', { class: 'msg info' }, user
+      ? 'Saved to My files. Anyone you give the full link to (including the part after the #) can decrypt it, if sharing is on.'
+      : "Anyone with this full link can download the file. The part after the # is the decryption key. We never see it, so we can't recover it. Keep the link safe."));
+  });
+}
+
+// --- download page ---
+async function downloadPage() {
+  const id = query.get('d') || '', keyStr = location.hash.slice(1), out = $('d-out'), dl = $('dl');
+  let meta, info, keys;
+  const bail = (a, b) => { $('fname').textContent = a; $('fmeta').textContent = b; };
+  try {
+    if (!keyStr) { bail('Invalid link', 'The link is missing its decryption key (the part after the #). Make sure you copied the whole link.'); return; }
+    keys = await fileKeys(unb64u(keyStr));
+    try { meta = await api('file_meta', { query: `&id=${id}` }); } catch { bail('File not found', 'This file does not exist, has expired, or is no longer shared.'); return; }
+    info = await decryptMeta(keys.meta, meta.encMeta);
+  } catch { bail('Wrong key', "This link's key does not match the file. Make sure you copied the whole link."); return; }
+
+  document.title = `${info.name} - ${cfg.siteName}`;
+  $('fname').textContent = info.name;
+  $('fmeta').textContent = `${fmt(info.size)} - expires: ${meta.expiresAt ? timeLeft(meta.expiresAt) : 'never'}${meta.owner ? ' - your file' : ''}`;
+  dl.disabled = false;
+
+  // where the decrypted data goes. chrome/edge: straight to disk. firefox/safari: through the service worker (/sw.js). otherwise memory
+  async function openSink() {
+    if (window.showSaveFilePicker) {
+      try { const w = await (await showSaveFilePicker({ suggestedName: info.name })).createWritable(); return { write: (b) => w.write(b), close: () => w.close(), abort: () => w.abort() }; }
+      catch (e) { if (e.name === 'AbortError') return null; }
+    }
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.register('/sw.js'); await navigator.serviceWorker.ready;
+        const worker = reg.active; while (worker.state !== 'activated') await sleep(50);
+        const { port1, port2 } = new MessageChannel(), dlId = crypto.randomUUID();
+        let credits = 0, wake = null, cancelled = false, started = false;
+        port1.onmessage = (m) => { if (m.data === 'ok') credits++; else if (m.data === 'cancel') cancelled = true; wake?.(); };
+        worker.postMessage({ id: dlId, name: info.name, size: info.size, port: port2 }, [port2]);
+        const a = el('a', { href: `/_dl/${dlId}` }); document.body.append(a); a.click(); a.remove();
+        return {
+          async write(b) {
+            const t0 = Date.now();
+            while (credits === 0 && !cancelled) {
+              await new Promise((r) => { wake = r; setTimeout(r, 1000); });
+              if (!started && Date.now() - t0 > 20000) throw Object.assign(new Error('The browser did not start the download. Reload the page and try again.'), { fatal: true });
+            }
+            started = true;
+            if (cancelled) throw Object.assign(new Error('Download was cancelled.'), { fatal: true });
+            credits--; port1.postMessage(b, [b.buffer]);
+          },
+          close: async () => port1.postMessage(null), abort: async () => port1.postMessage('abort'),
+        };
+      } catch { /* fall back to memory */ }
+    }
+    const parts = [];
+    return { inMemory: true, write: async (b) => { parts.push(b); }, abort: async () => { parts.length = 0; },
+      close: async () => { const a = el('a', { href: URL.createObjectURL(new Blob(parts, { type: info.type || 'application/octet-stream' })), download: info.name }); document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 30 * 60e3); } };
+  }
+
+  dl.addEventListener('click', async () => {
+    const ENC = meta.chunkSize + TAG, total = meta.chunks, encTotal = meta.size + total * TAG, expectedLen = (i) => (i < total - 1 ? ENC : encTotal - i * ENC);
+    const sink = await openSink(); if (!sink) return;
+    out.replaceChildren();
+    if (sink.inMemory && info.size > 2 * 1024 ** 3) message(out, 'warn', 'Your browser has to keep the whole file in memory. For big files, use Chrome, Edge or Firefox.');
+    $('d-prog').style.display = 'block'; dl.disabled = true;
+    const progress = (i) => { const p = (i / total) * 100; $('d-fill').style.width = p + '%'; $('d-pct').textContent = p.toFixed(0) + '%'; };
+    progress(0);
+    let idx = 0, attempts = 0;
+    try {
+      while (idx < total) {  // one streaming request, if it drops we start again from the chunk we were on
+        let cur = new Uint8Array(expectedLen(idx)), fill = 0;
+        try {
+          $('d-status').textContent = 'Downloading and decrypting...';
+          const res = await fetch(`${API}?action=file_blob&id=${id}`, { credentials: 'include', headers: { Range: `bytes=${idx * ENC}-` } });
+          if (res.status !== 206 && !(res.status === 200 && idx === 0)) throw Object.assign(new Error(`Server returned ${res.status}`), { fatal: res.status === 404 });
+          const reader = res.body.getReader();
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            for (let p = 0; p < value.length && idx < total;) {
+              const take = Math.min(value.length - p, cur.length - fill);
+              cur.set(value.subarray(p, p + take), fill); fill += take; p += take;
+              if (fill === cur.length) {
+                let plain;
+                try { plain = await decryptChunk(keys.data, idx, idx === total - 1, cur); } catch { throw Object.assign(new Error('Decryption failed: the file is corrupted or the key is wrong.'), { fatal: true }); }
+                await sink.write(plain); idx++; attempts = 0; progress(idx); fill = 0;
+                if (idx < total) cur = new Uint8Array(expectedLen(idx));
+              }
+            }
+          }
+          if (idx < total) throw new Error('Connection closed early');
+        } catch (e) {
+          if (e.fatal || ++attempts > 5) throw e;
+          $('d-status').textContent = `Connection problem, retrying (${attempts}/5)...`; await sleep(1000 * attempts);
+        }
+      }
+      await sink.close(); $('d-status').textContent = 'Done'; dl.textContent = 'Download again';
+    } catch (e) { try { await sink.abort(); } catch { /* */ } $('d-status').textContent = 'Failed'; message(out, 'err', e.message); }
+    finally { dl.disabled = false; }
+  });
+}
+
+// --- login / signup / recover ---
+async function loginPage() {
+  if (user && getMaster()) { location.replace('/?dashboard'); return; }
+  const out = $('l-out'), panes = ['login', 'signup', 'recover'], ts = await mountTurnstile($('s-ts'));
+  const show = (tab) => { for (const p of panes) $(p).classList.toggle('hidden', p !== tab); $('recovery').classList.add('hidden'); for (const b of $('tabs').children) b.classList.toggle('active', b.dataset.tab === tab); out.replaceChildren(); };
+  $('tabs').addEventListener('click', (e) => e.target.dataset?.tab && show(e.target.dataset.tab));
+  if (location.hash === '#signup') show('signup');
+  const busy = (form, on) => { for (const b of form.querySelectorAll('button')) b.disabled = on; };
+  const norm = (s) => s.trim().toLowerCase();
+
+  $('login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = norm($('l-user').value), password = $('l-pass').value;
+    if (!username || !password) return message(out, 'err', 'Enter your username and password.');
+    busy(e.target, true); message(out, 'info', 'Logging in... (this takes a second on purpose)');
+    try {
+      const { salt } = await api('salt', { body: { username } });
+      const { authKey, wrapKey } = await deriveFromPassword(password, unb64u(salt));
+      const r = await api('login', { body: { username, authKey: b64u(authKey) } });
+      setMaster(await unwrap(wrapKey, r.wrappedMasterPw, 'master-pw')); location.href = '/?dashboard';
+    } catch (err) { message(out, 'err', err.message); busy(e.target, false); }
+  });
+
+  let recoveryKey = '';
+  $('signup').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = norm($('s-user').value), pw = $('s-pass').value;
+    if (!/^[a-z0-9_.-]{3,32}$/.test(username)) return message(out, 'err', 'Username must be 3-32 characters: a-z, 0-9, _ . -');
+    if (pw.length < 10) return message(out, 'err', 'Password must be at least 10 characters.');
+    if (pw !== $('s-pass2').value) return message(out, 'err', 'Passwords do not match.');
+    busy(e.target, true); message(out, 'info', 'Creating your keys... (this takes a second on purpose)');
+    try {
+      const acc = await makeAccount(pw);
+      await api('register', { body: { username, ...acc.send, turnstile: ts.token() } });
+      setMaster(acc.masterKey); recoveryKey = acc.recoveryKey; $('rk').textContent = recoveryKey;
+      for (const p of panes) $(p).classList.add('hidden');
+      $('tabs').classList.add('hidden'); $('recovery').classList.remove('hidden'); out.replaceChildren();
+    } catch (err) { message(out, 'err', err.message); busy(e.target, false); ts.reset(); }
+  });
+  $('rk-copy').onclick = () => navigator.clipboard.writeText(recoveryKey).then(() => ($('rk-copy').textContent = 'Copied'));
+  $('rk-save').onclick = () => {
+    const a = el('a', { href: URL.createObjectURL(new Blob([`Recovery key for ${norm($('s-user').value)}\n\n${recoveryKey}\n\nKeep this file private and safe. It is the only way to recover your account and files if you forget your password.\n`], { type: 'text/plain' })), download: 'recovery-key.txt' });
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+  $('rk-ok').onchange = () => ($('rk-go').disabled = !$('rk-ok').checked);
+  $('rk-go').onclick = () => (location.href = '/?dashboard');
+
+  $('recover').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = norm($('r-user').value), pw = $('r-pass').value;
+    if (pw.length < 10) return message(out, 'err', 'Password must be at least 10 characters.');
+    busy(e.target, true); message(out, 'info', 'Checking your recovery key...');
+    try {
+      const { wrappedMasterRec } = await api('recover_start', { body: { username } });
+      let rec;
+      try { rec = await recoverAccount($('r-key').value, wrappedMasterRec, pw); }
+      catch (err) { throw new Error(/incomplete|Invalid/.test(err.message) ? err.message : 'Wrong username or recovery key.'); }
+      await api('recover_finish', { body: { username, ...rec.send } });
+      setMaster(rec.masterKey); location.href = '/?dashboard';
+    } catch (err) { message(out, 'err', err.message); busy(e.target, false); }
+  });
+}
+
+// --- my files ---
+async function dashboardPage() {
+  if (!user) { location.replace('/?login'); return; }
+  const master = await ensureMaster($('gate')), out = $('dash-out');
+
+  async function load() {
+    const { files } = await api('files'), rows = []; let total = 0;
+    for (const f of files) {
+      let name = '(could not decrypt)', key = null;
+      try { key = await unwrapFileKey(master, f.wrappedKey); name = (await decryptMeta((await fileKeys(key)).meta, f.encMeta)).name; } catch { /* leave placeholder */ }
+      total += f.size; rows.push(row(f, name, key));
+    }
+    $('rows').replaceChildren(...rows);
+    $('tbl').classList.toggle('hidden', !files.length); $('empty').classList.toggle('hidden', !!files.length);
+    $('dash-sub').textContent = `${files.length} file${files.length === 1 ? '' : 's'}, ${fmt(total)} stored. No storage limit. File names are encrypted, the server can't read them.`;
+  }
+  function row(f, name, key) {
+    const link = key ? `${location.origin}/?d=${f.id}#${b64u(key)}` : '';
+    const sel = el('select', {}, el('option', { value: '' }, 'Change...'), ...cfg.userExpiry.map((k) => el('option', { value: k }, LABELS[k] || k)));
+    sel.onchange = async () => { try { await api('file_update', { body: { id: f.id, expiry: sel.value } }); await load(); } catch (e) { message(out, 'err', e.message); } };
+    const share = el('button', { class: 'sm' }, f.isPublic ? 'Copy link' : 'Share');
+    share.onclick = async () => {
+      try {
+        if (!f.isPublic) { await api('file_update', { body: { id: f.id, public: true } }); f.isPublic = true; }
+        await navigator.clipboard.writeText(link); share.textContent = 'Copied'; setTimeout(load, 1200);
+      } catch (e) { message(out, 'err', e.message); }
+    };
+    const stop = el('button', { class: 'sm' }, 'Stop sharing'); stop.onclick = async () => { await api('file_update', { body: { id: f.id, public: false } }); load(); };
+    const del = el('button', { class: 'sm danger' }, 'Delete');
+    del.onclick = async () => { if (confirm(`Delete "${name}" permanently?`)) { await api('file_delete', { body: { id: f.id } }); load(); } };
+    return el('tr', {}, el('td', { class: 'name' }, name, ' ', el('span', { class: 'badge' + (f.isPublic ? ' on' : '') }, f.isPublic ? 'shared' : 'private')),
+      el('td', {}, fmt(f.size)), el('td', {}, timeLeft(f.expiresAt)), el('td', {}, sel),
+      el('td', { class: 'acts' }, key ? el('a', { href: link }, el('button', { class: 'sm' }, 'Download')) : null, key ? share : null, f.isPublic ? stop : null, del));
+  }
+  $('pwform').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const oldPw = $('pw-old').value, newPw = $('pw-new').value;
+    if (newPw.length < 10) return message($('pwout'), 'err', 'New password must be at least 10 characters.');
+    message($('pwout'), 'info', 'Working...');
+    try {
+      const { authKey } = await deriveFromPassword(oldPw, unb64u(user.salt)), next = await rewrapMaster(master, newPw);
+      await api('password', { body: { oldAuthKey: b64u(authKey), ...next } });
+      message($('pwout'), 'ok', 'Password changed.'); $('pw-old').value = $('pw-new').value = '';
+    } catch (err) { message($('pwout'), 'err', err.message); }
+  });
+  try { await load(); } catch (e) { message(out, 'err', e.message); }
+}
+
+if (view === 'upload') uploadPage();
+else if (view === 'download') downloadPage();
+else if (view === 'login') loginPage();
+else if (view === 'dashboard') dashboardPage();
+</script>
+</body>
+</html>
