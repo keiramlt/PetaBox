@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PetaBox</title>
+<!-- github pages can't send headers, so the content security policy goes here. if you change the api address, change it here too -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://kei.mt http://localhost:3000; frame-src https://challenges.cloudflare.com; worker-src 'self'; object-src 'none'; base-uri 'none'">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -83,7 +84,6 @@ td select { margin: 0; padding: 4px 6px; font-size: .75rem; width: auto; display
       <div class="stats"><span><b id="ppct">0%</b></span><span><b id="psent">0 B</b> / <b id="ptotal">0 B</b></span><span><b id="pspeed">-</b></span><span>ETA <b id="peta">-</b></span><span id="pstatus"></span></div>
     </div>
     <div class="result" id="result"></div>
-    <p class="small foot"><a href="/?terms">Terms &amp; abuse reports</a></p>
   </section>
 
   <!-- download: /?d=<id>#<key> -->
@@ -145,16 +145,6 @@ td select { margin: 0; padding: 4px 6px; font-size: .75rem; width: auto; display
       <div class="actions"><button type="submit">Change password</button></div>
     </form>
     <div id="pwout"></div>
-  </section>
-
-  <!-- terms: /terms -->
-  <section id="v-terms" class="hidden">
-    <h1>Terms &amp; abuse reports</h1>
-    <p class="sub">EDIT THIS TEXT before launch (search for "abuse@" in index.html). It is a starting point, not legal advice.</p>
-    <h2>How it works</h2><p>Files are encrypted in your browser before upload. The operator cannot read file contents, names or decryption keys, and cannot recover a lost link or a lost password and recovery key.</p>
-    <h2>What you may not upload</h2><p>Anything illegal where the operator lives or where you live, including child sexual abuse material, malware used to attack others, and content you do not have the right to share.</p>
-    <h2>Reporting abuse / takedowns</h2><p>Send the file ID (the part of the link after <code>?d=</code> and before <code>#</code>; never send the part after the #) to: <b>abuse@your-domain.example</b> (REPLACE ME). The operator can delete a file by its ID without being able to read it.</p>
-    <h2>No guarantees</h2><p>Files may be lost or deleted at any time. Keep a copy of anything important. Files are deleted automatically when their chosen time runs out.</p>
   </section>
 </div>
 
@@ -330,16 +320,16 @@ async function mountTurnstile(box) {
 }
 
 // --- nav, and picking which page to show ---
-document.title = cfg.siteName;
+document.title = cfg.siteName || 'PetaBox';
 $('nav').replaceChildren(
-  el('a', { class: 'brand', href: '/' }, cfg.siteName), el('a', { href: '/' }, 'Upload'),
+  el('a', { class: 'brand', href: '/' }, cfg.siteName || 'PetaBox'), el('a', { href: '/' }, 'Upload'),
   ...(user ? [el('a', { href: '/?dashboard' }, 'My files'),
     el('button', { class: 'link', onclick: async () => { try { await api('logout', { body: {} }); } catch { /* */ } sessionStorage.clear(); location.href = '/'; } }, `Log out (${user.username})`)]
     : [el('a', { href: '/?login' }, 'Log in / Sign up')]));
 
-// github pages can't do /d/abc style addresses, so the page is picked from the query: /?d=<id>  /?login  /?dashboard  /?terms
+// github pages can't do /d/abc style addresses, so the page is picked from the query: /?d=<id>  /?login  /?dashboard
 const query = new URLSearchParams(location.search);
-const view = query.has('d') ? 'download' : ['login', 'dashboard', 'terms'].find((v) => query.has(v)) || 'upload';
+const view = query.has('d') ? 'download' : ['login', 'dashboard'].find((v) => query.has(v)) || 'upload';
 $('v-' + view).classList.remove('hidden');
 if (view === 'dashboard') $('app').classList.add('wide');
 
@@ -357,11 +347,7 @@ async function uploadPage() {
   } else $('up-sub').textContent = `Files are encrypted in your browser before they leave your device. Up to ${cfg.maxAnon / GB} GB per file, kept for up to 1 month. Log in for ${cfg.maxUser / GB} GB files and unlimited storage time.`;
 
   const setFiles = (list) => { files = [...list]; $('picked').textContent = files.map((f) => `${f.name} (${fmt(f.size)})`).join(', '); };
-  $('drop').addEventListener('dragover', (e) => { e.preventDefault(); $('drop').classList.add('over'); });
-  $('drop').addEventListener('dragleave', () => $('drop').classList.remove('over'));
-  $('drop').addEventListener('drop', (e) => { e.preventDefault(); $('drop').classList.remove('over'); setFiles(e.dataTransfer.files); });
-  $('file').addEventListener('change', () => setFiles($('file').files));
-  $('cancel').addEventListener('click', () => { cancelled = true; aborter?.abort(); });
+  $('drop').addEventListener('dragover', (e) => { e.preventDefault(); $('drop').classList.add('over'); });$('drop').addEventListener('dragleave', () => $('drop').classList.remove('over'));$('drop').addEventListener('drop', (e) => { e.preventDefault(); $('drop').classList.remove('over'); setFiles(e.dataTransfer.files); });$('file').addEventListener('change', () => setFiles($('file').files));$('cancel').addEventListener('click', () => { cancelled = true; aborter?.abort(); });
 
   // xhr instead of fetch because fetch can't do upload progress
   const putChunk = (id, token, n, body, onProgress, signal) => new Promise((resolve, reject) => {
@@ -475,7 +461,7 @@ async function downloadPage() {
     info = await decryptMeta(keys.meta, meta.encMeta);
   } catch { bail('Wrong key', "This link's key does not match the file. Make sure you copied the whole link."); return; }
 
-  document.title = `${info.name} - ${cfg.siteName}`;
+  document.title = `${info.name} - ${cfg.siteName || 'PetaBox'}`;
   $('fname').textContent = info.name;
   $('fmeta').textContent = `${fmt(info.size)} - expires: ${meta.expiresAt ? timeLeft(meta.expiresAt) : 'never'}${meta.owner ? ' - your file' : ''}`;
   dl.disabled = false;
