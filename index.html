@@ -67,6 +67,12 @@ td select { margin: 0; padding: 4px 6px; font-size: .75rem; width: auto; display
 .modal { width: 100%; max-width: 380px; border: 1.5px solid #2e2e2e; border-radius: 8px; padding: 22px; background: #161616; box-shadow: 0 12px 40px rgba(0, 0, 0, .6); }
 .modal h2 { margin: 0 0 8px; } .modal p { color: #999; font-size: .85rem; word-break: break-word; margin-bottom: 0; }
 .modal .actions { justify-content: flex-end; margin-top: 20px; }
+.modal-back { animation: modal-fade .16s ease-out; } .modal { animation: modal-zoom-in .18s cubic-bezier(.2, .8, .3, 1); }
+.modal-back.out { animation: modal-fade .12s ease-in reverse forwards; pointer-events: none; } .modal-back.out .modal { animation: modal-zoom-out .12s ease-in forwards; }
+@keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-zoom-in { from { transform: scale(.88); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes modal-zoom-out { from { transform: scale(1); opacity: 1; } to { transform: scale(.9); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .modal-back, .modal, .modal-back.out, .modal-back.out .modal { animation: none; } }
 .dash-head { text-align: center; margin-bottom: 8px; } .dash-head .sub { margin-bottom: 16px; }
 .view-toggle { display: inline-flex; border: 1.5px solid #2e2e2e; border-radius: 6px; overflow: hidden; margin-bottom: 24px; }
 .view-toggle button { border: 0; border-radius: 0; background: none; padding: 6px 16px; }
@@ -310,7 +316,13 @@ function askConfirm(title, text, okLabel = 'Delete') {
     const cancel = el('button', {}, 'Cancel'), ok = el('button', { class: 'danger-solid' }, okLabel);
     const back = el('div', { class: 'modal-back' }, el('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
       el('h2', {}, title), el('p', {}, text), el('div', { class: 'actions' }, cancel, ok)));
-    const done = (v) => { document.removeEventListener('keydown', onKey, true); back.remove(); if (prev && prev.focus) prev.focus(); resolve(v); };
+    let closed = false;
+    const done = (v) => {
+      if (closed) return; closed = true;
+      document.removeEventListener('keydown', onKey, true); back.classList.add('out');   // zoom out, then remove
+      setTimeout(() => back.remove(), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 130);
+      if (prev && prev.focus) prev.focus(); resolve(v);
+    };
     const onKey = (e) => {
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(false); }
       else if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === cancel ? ok : cancel).focus(); }
