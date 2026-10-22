@@ -455,17 +455,13 @@ async function uploadPage() {
     let failure = null;
     // the next chunk is read and encrypted while the current one uploads, so the connection never sits idle between chunks
     const prep = (n) => f.slice(n * ch, Math.min(n * ch + ch, f.size)).arrayBuffer().then((b) => encryptChunk(keys.data, n, n === total - 1, new Uint8Array(b)));
-    // the first part goes out alone so it gets the whole connection and confirms within seconds (progress shows up right away).
-    // the other workers join once it is confirmed, or after 10 s at the latest
-    let gotFirst; const firstDone = new Promise((r) => (gotFirst = r));
-    async function worker(i) {
-      if (i > 0) await Promise.race([firstDone, sleep(10000)]);
+    async function worker() {
       let next = todo.length ? todo.shift() : null, nextCt = next === null ? null : prep(next);
       while (next !== null && !failure && !cancelled) {
         const n = next, ct = await nextCt;
         next = todo.length ? todo.shift() : null; nextCt = next === null ? null : prep(next);
         for (let attempt = 1; ; attempt++) {
-          try { inflight++; const r = await putChunk(id, token, n, new Blob([ct]), aborter.signal).finally(() => inflight--); sent[n] = ct.length; gotFirst(); update(); console.debug(`[petabox] part ${n + 1}/${total}: ${(r.total / 1000).toFixed(1)}s, of which ${(r.wait / 1000).toFixed(1)}s waiting for the server after the body was handed over`); break; }
+          try { inflight++; const r = await putChunk(id, token, n, new Blob([ct]), aborter.signal).finally(() => inflight--); sent[n] = ct.length; update(); console.debug(`[petabox] part ${n + 1}/${total}: ${(r.total / 1000).toFixed(1)}s, of which ${(r.wait / 1000).toFixed(1)}s waiting for the server after the body was handed over`); break; }
           catch (e) {
             if (cancelled || e.fatal || attempt >= 5) { failure ||= e; return; }
             sent[n] = 0; status(`Connection problem, retrying part ${n + 1} (${attempt}/4)...`); await sleep(1000 * attempt * attempt);
@@ -474,7 +470,7 @@ async function uploadPage() {
       }
     }
     status(label + 'Uploading...');
-    try { await Promise.all(Array.from({ length: Math.min(PARALLEL, todo.length) }, (_, i) => worker(i))); } finally { clearInterval(ticker); }
+    try { await Promise.all(Array.from({ length: Math.min(PARALLEL, todo.length) }, worker)); } finally { clearInterval(ticker); }
     if (cancelled) throw new Error('Cancelled');
     if (failure) throw failure;
     status('Finishing...');
