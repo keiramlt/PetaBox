@@ -63,6 +63,10 @@ td select { margin: 0; padding: 4px 6px; font-size: .75rem; width: auto; display
 .badge { font-size: .68rem; padding: 2px 7px; border-radius: 10px; border: 1px solid #333; color: #888; white-space: nowrap; }
 .badge.on { border-color: #2a4a2a; color: #6abf6a; }
 .hidden { display: none !important; }
+.modal-back { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0, 0, 0, .65); }
+.modal { width: 100%; max-width: 380px; border: 1.5px solid #2e2e2e; border-radius: 8px; padding: 22px; background: #161616; box-shadow: 0 12px 40px rgba(0, 0, 0, .6); }
+.modal h2 { margin: 0 0 8px; } .modal p { color: #999; font-size: .85rem; word-break: break-word; margin-bottom: 0; }
+.modal .actions { justify-content: flex-end; margin-top: 20px; }
 .dash-head { text-align: center; margin-bottom: 8px; } .dash-head .sub { margin-bottom: 16px; }
 .view-toggle { display: inline-flex; border: 1.5px solid #2e2e2e; border-radius: 6px; overflow: hidden; margin-bottom: 24px; }
 .view-toggle button { border: 0; border-radius: 0; background: none; padding: 6px 16px; }
@@ -299,6 +303,24 @@ function el(tag, props = {}, ...kids) {
   n.append(...kids.flat().filter((x) => x != null));
   return n;
 }
+// a styled replacement for confirm(). resolves true / false. escape or a click outside cancels
+function askConfirm(title, text, okLabel = 'Delete') {
+  return new Promise((resolve) => {
+    const prev = document.activeElement;
+    const cancel = el('button', {}, 'Cancel'), ok = el('button', { class: 'danger-solid' }, okLabel);
+    const back = el('div', { class: 'modal-back' }, el('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
+      el('h2', {}, title), el('p', {}, text), el('div', { class: 'actions' }, cancel, ok)));
+    const done = (v) => { document.removeEventListener('keydown', onKey, true); back.remove(); if (prev && prev.focus) prev.focus(); resolve(v); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(false); }
+      else if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === cancel ? ok : cancel).focus(); }
+    };
+    cancel.onclick = () => done(false); ok.onclick = () => done(true);
+    back.addEventListener('mousedown', (e) => { if (e.target === back) done(false); });
+    document.addEventListener('keydown', onKey, true);
+    document.body.append(back); cancel.focus();   // cancel is focused first, so a stray Enter never deletes anything
+  });
+}
 function fmt(b) { const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0; while (b >= 1024 && i < 4) { b /= 1024; i++; } return (i ? b.toFixed(2) : b.toFixed(0)) + ' ' + u[i]; }
 function fmtTime(s) { if (!isFinite(s) || s < 0) return '-'; s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return h ? `${h}h ${m}m` : m ? `${m}m ${s % 60}s` : `${s}s`; }
 function timeLeft(iso) {
@@ -448,7 +470,7 @@ async function uploadPage() {
     let inflight = 0;   // parts handed to the network but not yet confirmed. shown so the page visibly keeps working before the first part confirms
     const ticker = setInterval(() => {
       update();
-      if ($('pstatus').textContent.includes('Uploading')) status(`${label}Uploading... ${inflight} part${inflight === 1 ? '' : 's'} in transit, ${fmtTime((performance.now() - t0) / 1000)}`);
+      if ($('pstatus').textContent.includes('Uploading')) status(`${label}Uploading... ${inflight} part${inflight === 1 ? '' : 's'} in transit, ${fmtTime((performance.now() - t0) / 1000)} elapsed`);
     }, 1000);
     // a few workers, each one reads a chunk, encrypts it, uploads it. keeps memory low even for 10 GB
     const todo = []; for (let n = 0; n < total; n++) if (!received.has(n)) todo.push(n);
@@ -703,7 +725,7 @@ async function dashboardPage() {
     };
     const stop = el('button', { class: 'sm' }, 'Stop sharing'); stop.onclick = async () => { await api('file_update', { body: { id: f.id, public: false } }); load(); };
     const del = el('button', { class: 'sm danger' }, 'Delete');
-    del.onclick = async () => { if (confirm(`Delete "${name}" permanently?`)) { await api('file_delete', { body: { id: f.id } }); load(); } };
+    del.onclick = async () => { if (await askConfirm('Delete file?', `"${name}" will be deleted permanently. This cannot be undone.`)) { await api('file_delete', { body: { id: f.id } }); load(); } };
     const badge = el('span', { class: 'badge' + (f.isPublic ? ' on' : '') }, f.isPublic ? 'shared' : 'private');
     return { sel, badge, buttons: [key ? el('a', { href: link }, el('button', { class: 'sm' }, 'Download')) : null, key ? share : null, f.isPublic ? stop : null, del] };
   }
@@ -745,7 +767,7 @@ async function settingsPage() {
     const out = $('delout'), btn = e.target.querySelector('button');
     if ($('del-user').value.trim().toLowerCase() !== user.username) return message(out, 'err', 'The username you typed does not match.');
     if (!$('del-pw').value) return message(out, 'err', 'Enter your password.');
-    if (!confirm('Permanently delete your account and ALL your files? This cannot be undone.')) return;
+    if (!(await askConfirm('Delete your account?', 'Your account and ALL your files will be deleted permanently. This cannot be undone.', 'Delete everything'))) return;
     btn.disabled = true; message(out, 'info', 'Deleting... (this can take a while if you have a lot of files)');
     try {
       const { authKey } = await deriveFromPassword($('del-pw').value, unb64u(user.salt));
