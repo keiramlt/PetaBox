@@ -448,7 +448,7 @@ async function uploadPage() {
     let inflight = 0;   // parts handed to the network but not yet confirmed. shown so the page visibly keeps working before the first part confirms
     const ticker = setInterval(() => {
       update();
-      if ($('pstatus').textContent.includes('Uploading')) status(`${label}Uploading... ${inflight} part${inflight === 1 ? '' : 's'} in transit, ${fmtTime((performance.now() - t0) / 1000)} elapsed`);
+      if ($('pstatus').textContent.includes('Uploading')) status(`${label}Uploading... ${inflight} part${inflight === 1 ? '' : 's'} in transit, ${fmtTime((performance.now() - t0) / 1000)}`);
     }, 1000);
     // a few workers, each one reads a chunk, encrypts it, uploads it. keeps memory low even for 10 GB
     const todo = []; for (let n = 0; n < total; n++) if (!received.has(n)) todo.push(n);
