@@ -63,6 +63,21 @@ td select { margin: 0; padding: 4px 6px; font-size: .75rem; width: auto; display
 .badge { font-size: .68rem; padding: 2px 7px; border-radius: 10px; border: 1px solid #333; color: #888; white-space: nowrap; }
 .badge.on { border-color: #2a4a2a; color: #6abf6a; }
 .hidden { display: none !important; }
+.dash-head { text-align: center; margin-bottom: 8px; } .dash-head .sub { margin-bottom: 16px; }
+.view-toggle { display: inline-flex; border: 1.5px solid #2e2e2e; border-radius: 6px; overflow: hidden; margin-bottom: 24px; }
+.view-toggle button { border: 0; border-radius: 0; background: none; padding: 6px 16px; }
+.view-toggle button.active { background: #222; color: #fff; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; justify-content: center; }
+.fcard { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; border: 1.5px solid #222; border-radius: 8px; padding: 20px 16px; background: #161616; }
+.fcard .name { font-weight: 600; color: #fff; word-break: break-all; }
+.fcard .meta { font-size: .78rem; color: #666; }
+.fcard select { margin: 0; width: auto; padding: 4px 6px; font-size: .75rem; }
+.fcard .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+.settings-sec { border: 1.5px solid #222; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: #161616; }
+.settings-sec h2 { margin-top: 0; }
+.settings-sec.danger { border-color: #3a1a1a; }
+button.danger-solid { background: #7a2a2a; border-color: #7a2a2a; color: #fff; }
+button.danger-solid:hover:not(:disabled) { background: #983535; border-color: #983535; color: #fff; }
 @media (max-width: 640px) { th:nth-child(3), td:nth-child(3) { display: none; } }
 </style>
 </head>
@@ -133,18 +148,40 @@ td select { margin: 0; padding: 4px 6px; font-size: .75rem; width: auto; display
 
   <!-- my files: /dashboard -->
   <section id="v-dashboard" class="hidden">
-    <h1>My files</h1>
-    <p class="sub" id="dash-sub">Only you can see this list. File names are encrypted, the server can't read them.</p>
+    <div class="dash-head">
+      <h1>My files</h1>
+      <p class="sub" id="dash-sub">Only you can see this list. File names are encrypted, the server can't read them.</p>
+      <div class="view-toggle" id="vtoggle"><button data-mode="grid">Grid</button><button data-mode="list">List</button></div>
+    </div>
     <div id="gate"></div><div id="dash-out"></div>
+    <div id="grid" class="grid hidden"></div>
     <table id="tbl" class="hidden"><thead><tr><th>Name</th><th>Size</th><th>Expires</th><th>Keep for</th><th></th></tr></thead><tbody id="rows"></tbody></table>
-    <p id="empty" class="small hidden">No files yet. <a href="/">Upload something.</a></p>
-    <h2>Change password</h2>
-    <form id="pwform">
-      <label class="field">Current password <input type="password" id="pw-old" autocomplete="current-password"></label>
-      <label class="field">New password (at least 10 characters) <input type="password" id="pw-new" autocomplete="new-password"></label>
-      <div class="actions"><button type="submit">Change password</button></div>
-    </form>
-    <div id="pwout"></div>
+    <p id="empty" class="small hidden" style="text-align:center">No files yet. <a href="/">Upload something.</a></p>
+  </section>
+
+  <!-- settings: /?settings -->
+  <section id="v-settings" class="hidden">
+    <h1>Settings</h1>
+    <p class="sub" id="set-sub"></p>
+    <div class="settings-sec">
+      <h2>Change password</h2>
+      <form id="pwform">
+        <label class="field">Current password <input type="password" id="pw-old" autocomplete="current-password"></label>
+        <label class="field">New password (at least 10 characters) <input type="password" id="pw-new" autocomplete="new-password"></label>
+        <div class="actions"><button type="submit">Change password</button></div>
+      </form>
+      <div id="pwgate"></div><div id="pwout"></div>
+    </div>
+    <div class="settings-sec danger">
+      <h2>Delete account</h2>
+      <p class="small">This permanently deletes your account and every file you uploaded, including the stored data and all share links. It cannot be undone and nobody can recover it, not even with your recovery key.</p>
+      <form id="delform">
+        <label class="field">Type your username to confirm <input type="text" id="del-user" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+        <label class="field">Password <input type="password" id="del-pw" autocomplete="current-password"></label>
+        <div class="actions"><button class="danger-solid" type="submit">Delete my account and all data</button></div>
+      </form>
+      <div id="delout"></div>
+    </div>
   </section>
 </div>
 
@@ -323,13 +360,13 @@ async function mountTurnstile(box) {
 document.title = cfg.siteName || 'PetaBox';
 $('nav').replaceChildren(
   el('a', { class: 'brand', href: '/' }, cfg.siteName || 'PetaBox'), el('a', { href: '/' }, 'Upload'),
-  ...(user ? [el('a', { href: '/?dashboard' }, 'My files'),
+  ...(user ? [el('a', { href: '/?dashboard' }, 'My files'), el('a', { href: '/?settings' }, 'Settings'),
     el('button', { class: 'link', onclick: async () => { try { await api('logout', { body: {} }); } catch { /* */ } sessionStorage.clear(); location.href = '/'; } }, `Log out (${user.username})`)]
     : [el('a', { href: '/?login' }, 'Log in / Sign up')]));
 
 // github pages can't do /d/abc style addresses, so the page is picked from the query: /?d=<id>  /?login  /?dashboard
 const query = new URLSearchParams(location.search);
-const view = query.has('d') ? 'download' : ['login', 'dashboard'].find((v) => query.has(v)) || 'upload';
+const view = query.has('d') ? 'download' : ['login', 'dashboard', 'settings'].find((v) => query.has(v)) || 'upload';
 $('v-' + view).classList.remove('hidden');
 if (view === 'dashboard') $('app').classList.add('wide');
 
@@ -611,19 +648,34 @@ async function loginPage() {
 async function dashboardPage() {
   if (!user) { location.replace('/?login'); return; }
   const master = await ensureMaster($('gate')), out = $('dash-out');
+  let items = [], mode = 'grid';
+  try { mode = localStorage.getItem('pb_view') === 'list' ? 'list' : 'grid'; } catch { /* */ }
 
   async function load() {
-    const { files } = await api('files'), rows = []; let total = 0;
+    const { files } = await api('files'); let total = 0; items = [];
     for (const f of files) {
       let name = '(could not decrypt)', key = null;
       try { key = await unwrapFileKey(master, f.wrappedKey); name = (await decryptMeta((await fileKeys(key)).meta, f.encMeta)).name; } catch { /* leave placeholder */ }
-      total += f.size; rows.push(row(f, name, key));
+      total += f.size; items.push({ f, name, key });
     }
-    $('rows').replaceChildren(...rows);
-    $('tbl').classList.toggle('hidden', !files.length); $('empty').classList.toggle('hidden', !!files.length);
     $('dash-sub').textContent = `${files.length} file${files.length === 1 ? '' : 's'}, ${fmt(total)} stored. No storage limit. File names are encrypted, the server can't read them.`;
+    render();
   }
-  function row(f, name, key) {
+  function render() {
+    for (const b of $('vtoggle').children) b.classList.toggle('active', b.dataset.mode === mode);
+    $('grid').replaceChildren(...(mode === 'grid' ? items.map(({ f, name, key }) => card(f, name, key)) : []));
+    $('rows').replaceChildren(...(mode === 'list' ? items.map(({ f, name, key }) => row(f, name, key)) : []));
+    $('grid').classList.toggle('hidden', mode !== 'grid' || !items.length);
+    $('tbl').classList.toggle('hidden', mode !== 'list' || !items.length);
+    $('empty').classList.toggle('hidden', !!items.length);
+  }
+  $('vtoggle').addEventListener('click', (e) => {
+    const m = e.target.dataset?.mode; if (!m) return;
+    mode = m; try { localStorage.setItem('pb_view', m); } catch { /* */ } render();
+  });
+
+  // the controls are the same in both layouts
+  function controls(f, name, key) {
     const link = key ? `${location.origin}/?d=${f.id}#${b64u(key)}` : '';
     const sel = el('select', {}, el('option', { value: '' }, 'Change...'), ...cfg.userExpiry.map((k) => el('option', { value: k }, LABELS[k] || k)));
     sel.onchange = async () => { try { await api('file_update', { body: { id: f.id, expiry: sel.value } }); await load(); } catch (e) { message(out, 'err', e.message); } };
@@ -637,28 +689,63 @@ async function dashboardPage() {
     const stop = el('button', { class: 'sm' }, 'Stop sharing'); stop.onclick = async () => { await api('file_update', { body: { id: f.id, public: false } }); load(); };
     const del = el('button', { class: 'sm danger' }, 'Delete');
     del.onclick = async () => { if (confirm(`Delete "${name}" permanently?`)) { await api('file_delete', { body: { id: f.id } }); load(); } };
-    return el('tr', {}, el('td', { class: 'name' }, name, ' ', el('span', { class: 'badge' + (f.isPublic ? ' on' : '') }, f.isPublic ? 'shared' : 'private')),
-      el('td', {}, fmt(f.size)), el('td', {}, timeLeft(f.expiresAt)), el('td', {}, sel),
-      el('td', { class: 'acts' }, key ? el('a', { href: link }, el('button', { class: 'sm' }, 'Download')) : null, key ? share : null, f.isPublic ? stop : null, del));
+    const badge = el('span', { class: 'badge' + (f.isPublic ? ' on' : '') }, f.isPublic ? 'shared' : 'private');
+    return { sel, badge, buttons: [key ? el('a', { href: link }, el('button', { class: 'sm' }, 'Download')) : null, key ? share : null, f.isPublic ? stop : null, del] };
   }
+  function row(f, name, key) {
+    const c = controls(f, name, key);
+    return el('tr', {}, el('td', { class: 'name' }, name, ' ', c.badge), el('td', {}, fmt(f.size)), el('td', {}, timeLeft(f.expiresAt)), el('td', {}, c.sel),
+      el('td', { class: 'acts' }, ...c.buttons));
+  }
+  function card(f, name, key) {
+    const c = controls(f, name, key);
+    return el('div', { class: 'fcard' }, el('div', { class: 'name' }, name), c.badge,
+      el('div', { class: 'meta' }, `${fmt(f.size)} - expires: ${timeLeft(f.expiresAt)}`),
+      el('label', { class: 'small' }, 'Keep for ', c.sel), el('div', { class: 'acts' }, ...c.buttons));
+  }
+  try { await load(); } catch (e) { message(out, 'err', e.message); }
+}
+
+// --- settings: change password, delete account ---
+async function settingsPage() {
+  if (!user) { location.replace('/?login'); return; }
+  $('set-sub').textContent = `Logged in as ${user.username}.`;
+
   $('pwform').addEventListener('submit', async (e) => {
     e.preventDefault();
     const oldPw = $('pw-old').value, newPw = $('pw-new').value;
     if (newPw.length < 10) return message($('pwout'), 'err', 'New password must be at least 10 characters.');
+    const master = await ensureMaster($('pwgate'));
     message($('pwout'), 'info', 'Working...');
     try {
       const { authKey } = await deriveFromPassword(oldPw, unb64u(user.salt)), next = await rewrapMaster(master, newPw);
       await api('password', { body: { oldAuthKey: b64u(authKey), ...next } });
       message($('pwout'), 'ok', 'Password changed.'); $('pw-old').value = $('pw-new').value = '';
+      user = await api('me');
     } catch (err) { message($('pwout'), 'err', err.message); }
   });
-  try { await load(); } catch (e) { message(out, 'err', e.message); }
+
+  $('delform').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const out = $('delout'), btn = e.target.querySelector('button');
+    if ($('del-user').value.trim().toLowerCase() !== user.username) return message(out, 'err', 'The username you typed does not match.');
+    if (!$('del-pw').value) return message(out, 'err', 'Enter your password.');
+    if (!confirm('Permanently delete your account and ALL your files? This cannot be undone.')) return;
+    btn.disabled = true; message(out, 'info', 'Deleting... (this can take a while if you have a lot of files)');
+    try {
+      const { authKey } = await deriveFromPassword($('del-pw').value, unb64u(user.salt));
+      await api('delete_account', { body: { oldAuthKey: b64u(authKey) } });
+      try { for (const k of Object.keys(localStorage)) if (k.startsWith('pb_resume:')) localStorage.removeItem(k); } catch { /* */ }
+      sessionStorage.clear(); location.href = '/';
+    } catch (err) { message(out, 'err', err.message); btn.disabled = false; }
+  });
 }
 
 if (view === 'upload') uploadPage();
 else if (view === 'download') downloadPage();
 else if (view === 'login') loginPage();
 else if (view === 'dashboard') dashboardPage();
+else if (view === 'settings') settingsPage();
 </script>
 </body>
 </html>
