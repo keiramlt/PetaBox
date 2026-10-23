@@ -459,7 +459,7 @@ const API = location.hostname === 'localhost' ? 'http://localhost:3000/api.php' 
 async function api(action, { body, query = '', headers = {}, signal } = {}) {
   const res = await fetch(`${API}?action=${action}${query}`, {
     method: body !== undefined ? 'POST' : 'GET', signal, credentials: 'include',
-    headers: { ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...headers },
+    headers: { ...(body !== undefined ? { 'Content-Type': 'text/plain' } : {}), ...headers },   // text/plain = no CORS preflight, so one round trip instead of two
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   let data = null; try { data = await res.json(); } catch { /* empty */ }
@@ -840,22 +840,20 @@ async function dashboardPage() {
     const sel = el('select', {}, el('option', { value: '' }, 'Change...'), ...cfg.userExpiry.map((k) => el('option', { value: k }, LABELS[k] || k)));
     sel.onchange = async () => { try { await api('file_update', { body: { id: f.id, expiry: sel.value } }); await load(); } catch (e) { message(out, 'err', e.message); } };
     const share = el('button', { class: 'sm' }, f.isPublic ? 'Copy link' : 'Share');
+    // the screen updates straight away, the server request happens in the background (and is undone if it fails)
+    const setPublic = async (pub) => {
+      const before = f.isPublic; f.isPublic = pub; render();
+      try { const r = await api('file_update', { body: { id: f.id, public: pub } }); if (r.isPublic !== undefined) f.isPublic = r.isPublic; }
+      catch (e) { f.isPublic = before; message(out, 'err', e.message); }
+      render();
+    };
     share.onclick = async () => {
-      try {
-        if (!f.isPublic) { await api('file_update', { body: { id: f.id, public: true } }); f.isPublic = true; }
-        await navigator.clipboard.writeText(link); share.textContent = 'Copied'; setTimeout(load, 1200);
-      } catch (e) { message(out, 'err', e.message); }
+      try { await navigator.clipboard.writeText(link); } catch { /* clipboard blocked, the link still works */ }
+      if (f.isPublic) { share.textContent = 'Copied'; setTimeout(() => { share.textContent = 'Copy link'; }, 1200); }
+      else setPublic(true);
     };
     const stop = el('button', { class: 'sm' }, 'Stop sharing');
-    stop.onclick = async () => {
-      stop.disabled = true;
-      try {
-        const r = await api('file_update', { body: { id: f.id, public: false } });
-        f.isPublic = r.isPublic !== undefined ? r.isPublic : false;
-        message(out, 'ok', `"${name}" is private now. Only you can open its link while logged in.`);
-        render();
-      } catch (e) { stop.disabled = false; message(out, 'err', e.message); }
-    };
+    stop.onclick = () => setPublic(false);
     const del = el('button', { class: 'sm danger' }, 'Delete');
     del.onclick = async () => { if (await askConfirm('Delete file?', `"${name}" will be deleted permanently. This cannot be undone.`)) { await api('file_delete', { body: { id: f.id } }); load(); } };
     const badge = el('span', { class: 'badge' + (f.isPublic ? ' on' : '') }, f.isPublic ? 'shared' : 'private');
