@@ -199,6 +199,7 @@ code { transition: color .2s ease; } .result-link:hover code { color: #bbb; }
   .modal-back, .modal, .modal-back.out, .modal-back.out .modal { animation: none; }
 }
 .still .fcard, .still tbody tr { animation: none !important; }
+.nt, .nt *, .nt::after { transition: none !important; animation: none !important; }
 </style>
 </head>
 <body>
@@ -831,11 +832,23 @@ async function dashboardPage() {
     $('dash-sub').textContent = `${files.length} file${files.length === 1 ? '' : 's'}, ${fmt(total)} stored. No storage limit. File names are encrypted, the server can't read them.`;
     render(animate);
   }
+  // a rebuilt item sits under the mouse already, so its hover look is applied instantly (class 'nt') instead of animating in again
+  function build(it, animate) {
+    const e = mode === 'grid' ? card(it.f, it.name, it.key) : row(it.f, it.name, it.key);
+    if (!animate) { e.classList.add('nt'); e.addEventListener('mouseleave', () => e.classList.remove('nt'), { once: true }); }
+    return e;
+  }
+  // redraw just one item, in place
+  function refresh(f) {
+    const it = items.find((i) => i.f === f); if (!it || !it.el.isConnected) return;
+    const old = it.el; it.el = build(it, false); old.replaceWith(it.el);
+  }
   function render(animate = false) {   // animate only when the list is first drawn or the layout changes, not after a small change like share / stop sharing
     for (const e of [$('grid'), $('tbl')]) e.classList.toggle('still', !animate);
     for (const b of $('vtoggle').children) b.classList.toggle('active', b.dataset.mode === mode);
-    $('grid').replaceChildren(...(mode === 'grid' ? items.map(({ f, name, key }) => card(f, name, key)) : []));
-    $('rows').replaceChildren(...(mode === 'list' ? items.map(({ f, name, key }) => row(f, name, key)) : []));
+    for (const it of items) it.el = build(it, animate);
+    $('grid').replaceChildren(...(mode === 'grid' ? items.map((it) => it.el) : []));
+    $('rows').replaceChildren(...(mode === 'list' ? items.map((it) => it.el) : []));
     $('grid').classList.toggle('hidden', mode !== 'grid' || !items.length);
     $('tbl').classList.toggle('hidden', mode !== 'list' || !items.length);
     $('empty').classList.toggle('hidden', !!items.length);
@@ -853,10 +866,9 @@ async function dashboardPage() {
     const share = el('button', { class: 'sm' }, f.isPublic ? 'Copy link' : 'Share');
     // the screen updates straight away, the server request happens in the background (and is undone if it fails)
     const setPublic = async (pub) => {
-      const before = f.isPublic; f.isPublic = pub; render();
-      try { const r = await api('file_update', { body: { id: f.id, public: pub } }); if (r.isPublic !== undefined) f.isPublic = r.isPublic; }
-      catch (e) { f.isPublic = before; message(out, 'err', e.message); }
-      render();
+      const before = f.isPublic; f.isPublic = pub; refresh(f);
+      try { await api('file_update', { body: { id: f.id, public: pub } }); }
+      catch (e) { f.isPublic = before; message(out, 'err', e.message); refresh(f); }
     };
     share.onclick = async () => {
       try { await navigator.clipboard.writeText(link); } catch { /* clipboard blocked, the link still works */ }
