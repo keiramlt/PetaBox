@@ -470,9 +470,32 @@ async function api(action, { body, query = '', headers = {}, signal } = {}) {
 const getMaster = () => { try { const v = sessionStorage.getItem('pb_mk'); return v ? unb64u(v) : null; } catch { return null; } };
 const setMaster = (k) => { try { sessionStorage.setItem('pb_mk', b64u(k)); } catch { /* private mode */ } };
 
-// both requests at once (they used to run one after the other)
-const [cfg, meRes] = await Promise.all([api('config'), api('me').catch(() => null)]);
-let user = meRes;
+// --- paint the page shell first, before waiting for the server ---
+// github pages can't do /d/abc style addresses, so the page is picked from the query: /?d=<id>  /?login  /?dashboard
+const query = new URLSearchParams(location.search);
+const view = query.has('d') ? 'download' : ['login', 'dashboard', 'settings'].find((v) => query.has(v)) || 'upload';
+$('v-' + view).classList.remove('hidden');
+if (view === 'dashboard') $('app').classList.add('wide');
+
+const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* */ } } };
+let cfg = null; try { cfg = JSON.parse(store.get('pb_cfg')); } catch { /* none yet */ }   // last known settings, refreshed below
+function drawNav(name) {
+  $('nav').replaceChildren(
+    el('a', { class: 'brand', href: '/' }, cfg?.siteName || 'PetaBox'), el('a', { href: '/' }, 'Upload'),
+    ...(name ? [el('a', { href: '/?dashboard' }, 'My files'), el('a', { href: '/?settings' }, 'Settings'),
+      el('button', { class: 'link', onclick: async () => { try { await api('logout', { body: {} }); } catch { /* */ } sessionStorage.clear(); store.set('pb_name', ''); location.href = '/'; } }, `Log out (${name})`)]
+      : [el('a', { href: '/?login' }, 'Log in / Sign up')]));
+}
+drawNav(store.get('pb_name'));   // guess from last visit, corrected as soon as the server answers
+
+// ask the server for everything at once
+const cfgReq = api('config').then((c) => { store.set('pb_cfg', JSON.stringify(c)); return c; });
+const meReq = api('me').catch(() => null);
+if (!cfg) cfg = await cfgReq;      // only the very first visit has to wait for the settings
+let user = await meReq;
+store.set('pb_name', user ? user.username : '');
+document.title = cfg.siteName || 'PetaBox';
+drawNav(user?.username);
 
 // no master key in this tab yet (reload or new tab) so ask for the password again
 function ensureMaster(box) {
@@ -498,20 +521,6 @@ async function mountTurnstile(box) {
   const id = turnstile.render(box, { sitekey: cfg.turnstileSiteKey, theme: 'dark' });
   return { token: () => turnstile.getResponse(id) || '', reset: () => turnstile.reset(id) };
 }
-
-// --- nav, and picking which page to show ---
-document.title = cfg.siteName || 'PetaBox';
-$('nav').replaceChildren(
-  el('a', { class: 'brand', href: '/' }, cfg.siteName || 'PetaBox'), el('a', { href: '/' }, 'Upload'),
-  ...(user ? [el('a', { href: '/?dashboard' }, 'My files'), el('a', { href: '/?settings' }, 'Settings'),
-    el('button', { class: 'link', onclick: async () => { try { await api('logout', { body: {} }); } catch { /* */ } sessionStorage.clear(); location.href = '/'; } }, `Log out (${user.username})`)]
-    : [el('a', { href: '/?login' }, 'Log in / Sign up')]));
-
-// github pages can't do /d/abc style addresses, so the page is picked from the query: /?d=<id>  /?login  /?dashboard
-const query = new URLSearchParams(location.search);
-const view = query.has('d') ? 'download' : ['login', 'dashboard', 'settings'].find((v) => query.has(v)) || 'upload';
-$('v-' + view).classList.remove('hidden');
-if (view === 'dashboard') $('app').classList.add('wide');
 
 // --- upload page ---
 async function uploadPage() {
