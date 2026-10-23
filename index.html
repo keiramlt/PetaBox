@@ -198,6 +198,7 @@ code { transition: color .2s ease; } .result-link:hover code { color: #bbb; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .modal-back, .modal, .modal-back.out, .modal-back.out .modal { animation: none; }
 }
+.still .fcard, .still tbody tr { animation: none !important; }
 </style>
 </head>
 <body>
@@ -818,7 +819,7 @@ async function dashboardPage() {
   let items = [], mode = 'grid';
   try { mode = localStorage.getItem('pb_view') === 'list' ? 'list' : 'grid'; } catch { /* */ }
 
-  async function load() {
+  async function load(animate = true) {
     const { files } = await api('files'); let total = 0; items = [];
     // decrypt all the names at once instead of one after another
     items = await Promise.all(files.map(async (f) => {
@@ -828,9 +829,10 @@ async function dashboardPage() {
     }));
     for (const { f } of items) total += f.size;
     $('dash-sub').textContent = `${files.length} file${files.length === 1 ? '' : 's'}, ${fmt(total)} stored. No storage limit. File names are encrypted, the server can't read them.`;
-    render();
+    render(animate);
   }
-  function render() {
+  function render(animate = false) {   // animate only when the list is first drawn or the layout changes, not after a small change like share / stop sharing
+    for (const e of [$('grid'), $('tbl')]) e.classList.toggle('still', !animate);
     for (const b of $('vtoggle').children) b.classList.toggle('active', b.dataset.mode === mode);
     $('grid').replaceChildren(...(mode === 'grid' ? items.map(({ f, name, key }) => card(f, name, key)) : []));
     $('rows').replaceChildren(...(mode === 'list' ? items.map(({ f, name, key }) => row(f, name, key)) : []));
@@ -840,14 +842,14 @@ async function dashboardPage() {
   }
   $('vtoggle').addEventListener('click', (e) => {
     const m = e.target.dataset?.mode; if (!m) return;
-    mode = m; try { localStorage.setItem('pb_view', m); } catch { /* */ } render();
+    mode = m; try { localStorage.setItem('pb_view', m); } catch { /* */ } render(true);
   });
 
   // the controls are the same in both layouts
   function controls(f, name, key) {
     const link = key ? `${location.origin}/?d=${f.id}#${b64u(key)}` : '';
     const sel = el('select', {}, el('option', { value: '' }, 'Change...'), ...cfg.userExpiry.map((k) => el('option', { value: k }, LABELS[k] || k)));
-    sel.onchange = async () => { try { await api('file_update', { body: { id: f.id, expiry: sel.value } }); await load(); } catch (e) { message(out, 'err', e.message); } };
+    sel.onchange = async () => { try { await api('file_update', { body: { id: f.id, expiry: sel.value } }); await load(false); } catch (e) { message(out, 'err', e.message); } };
     const share = el('button', { class: 'sm' }, f.isPublic ? 'Copy link' : 'Share');
     // the screen updates straight away, the server request happens in the background (and is undone if it fails)
     const setPublic = async (pub) => {
@@ -864,7 +866,7 @@ async function dashboardPage() {
     const stop = el('button', { class: 'sm' }, 'Stop sharing');
     stop.onclick = () => setPublic(false);
     const del = el('button', { class: 'sm danger' }, 'Delete');
-    del.onclick = async () => { if (await askConfirm('Delete file?', `"${name}" will be deleted permanently. This cannot be undone.`)) { await api('file_delete', { body: { id: f.id } }); load(); } };
+    del.onclick = async () => { if (await askConfirm('Delete file?', `"${name}" will be deleted permanently. This cannot be undone.`)) { await api('file_delete', { body: { id: f.id } }); load(false); } };
     const badge = el('span', { class: 'badge' + (f.isPublic ? ' on' : '') }, f.isPublic ? 'shared' : 'private');
     return { sel, badge, buttons: [key ? el('a', { href: link }, el('button', { class: 'sm' }, 'Download')) : null, key ? share : null, f.isPublic ? stop : null, del] };
   }
