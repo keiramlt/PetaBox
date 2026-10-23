@@ -6,6 +6,7 @@
 <title>PetaBox</title>
 <!-- github pages can't send headers, so the content security policy goes here. if you change the api address, change it here too -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://kei.mt http://localhost:3000; frame-src https://challenges.cloudflare.com; worker-src 'self'; object-src 'none'; base-uri 'none'">
+<link rel="preconnect" href="https://kei.mt" crossorigin>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 15px; background: #111; color: #d0d0d0; min-height: 100vh; padding: 24px 20px 48px; }
@@ -104,14 +105,14 @@ button.danger-solid:hover:not(:disabled) { background: #983535; border-color: #9
 /* page + sections */
 body { background-image: radial-gradient(60vmax 60vmax at 15% -10%, rgba(255, 255, 255, .035), transparent 60%), radial-gradient(50vmax 50vmax at 100% 110%, rgba(255, 255, 255, .03), transparent 60%); background-repeat: no-repeat; background-attachment: fixed; background-size: 140% 140%; animation: bg-drift 24s ease-in-out infinite alternate; }
 nav { animation: fade-down .45s cubic-bezier(.2, .8, .3, 1) both; }
-section:not(.hidden) > *, #recovery:not(.hidden) > *, form:not(.hidden) > * { animation: fade-up .5s cubic-bezier(.2, .8, .3, 1) both; }
-section:not(.hidden) > :nth-child(1), form:not(.hidden) > :nth-child(1) { animation-delay: .04s; }
-section:not(.hidden) > :nth-child(2), form:not(.hidden) > :nth-child(2) { animation-delay: .09s; }
-section:not(.hidden) > :nth-child(3), form:not(.hidden) > :nth-child(3) { animation-delay: .14s; }
-section:not(.hidden) > :nth-child(4), form:not(.hidden) > :nth-child(4) { animation-delay: .19s; }
-section:not(.hidden) > :nth-child(5), form:not(.hidden) > :nth-child(5) { animation-delay: .24s; }
-section:not(.hidden) > :nth-child(n+6), form:not(.hidden) > :nth-child(n+6) { animation-delay: .29s; }
-#recovery:not(.hidden) > :nth-child(2) { animation-delay: .09s; } #recovery:not(.hidden) > :nth-child(3) { animation-delay: .14s; } #recovery:not(.hidden) > :nth-child(n+4) { animation-delay: .2s; }
+section:not(.hidden) > *, #recovery:not(.hidden) > *, form:not(.hidden) > * { animation: fade-up .2s ease-out both; }
+section:not(.hidden) > :nth-child(1), form:not(.hidden) > :nth-child(1) { animation-delay: 0s; }
+section:not(.hidden) > :nth-child(2), form:not(.hidden) > :nth-child(2) { animation-delay: 0s; }
+section:not(.hidden) > :nth-child(3), form:not(.hidden) > :nth-child(3) { animation-delay: 0s; }
+section:not(.hidden) > :nth-child(4), form:not(.hidden) > :nth-child(4) { animation-delay: 0s; }
+section:not(.hidden) > :nth-child(5), form:not(.hidden) > :nth-child(5) { animation-delay: 0s; }
+section:not(.hidden) > :nth-child(n+6), form:not(.hidden) > :nth-child(n+6) { animation-delay: 0s; }
+#recovery:not(.hidden) > :nth-child(2) { animation-delay: .03s; } #recovery:not(.hidden) > :nth-child(3) { animation-delay: .03s; } #recovery:not(.hidden) > :nth-child(n+4) { animation-delay: .03s; }
 .hidden { animation: none !important; }
 
 /* nav */
@@ -469,9 +470,9 @@ async function api(action, { body, query = '', headers = {}, signal } = {}) {
 const getMaster = () => { try { const v = sessionStorage.getItem('pb_mk'); return v ? unb64u(v) : null; } catch { return null; } };
 const setMaster = (k) => { try { sessionStorage.setItem('pb_mk', b64u(k)); } catch { /* private mode */ } };
 
-const cfg = await api('config');
-let user = null;
-try { user = await api('me'); } catch { /* not logged in */ }
+// both requests at once (they used to run one after the other)
+const [cfg, meRes] = await Promise.all([api('config'), api('me').catch(() => null)]);
+let user = meRes;
 
 // no master key in this tab yet (reload or new tab) so ask for the password again
 function ensureMaster(box) {
@@ -810,11 +811,13 @@ async function dashboardPage() {
 
   async function load() {
     const { files } = await api('files'); let total = 0; items = [];
-    for (const f of files) {
+    // decrypt all the names at once instead of one after another
+    items = await Promise.all(files.map(async (f) => {
       let name = '(could not decrypt)', key = null;
       try { key = await unwrapFileKey(master, f.wrappedKey); name = (await decryptMeta((await fileKeys(key)).meta, f.encMeta)).name; } catch { /* leave placeholder */ }
-      total += f.size; items.push({ f, name, key });
-    }
+      return { f, name, key };
+    }));
+    for (const { f } of items) total += f.size;
     $('dash-sub').textContent = `${files.length} file${files.length === 1 ? '' : 's'}, ${fmt(total)} stored. No storage limit. File names are encrypted, the server can't read them.`;
     render();
   }
@@ -843,7 +846,16 @@ async function dashboardPage() {
         await navigator.clipboard.writeText(link); share.textContent = 'Copied'; setTimeout(load, 1200);
       } catch (e) { message(out, 'err', e.message); }
     };
-    const stop = el('button', { class: 'sm' }, 'Stop sharing'); stop.onclick = async () => { await api('file_update', { body: { id: f.id, public: false } }); load(); };
+    const stop = el('button', { class: 'sm' }, 'Stop sharing');
+    stop.onclick = async () => {
+      stop.disabled = true;
+      try {
+        const r = await api('file_update', { body: { id: f.id, public: false } });
+        f.isPublic = r.isPublic !== undefined ? r.isPublic : false;
+        message(out, 'ok', `"${name}" is private now. Only you can open its link while logged in.`);
+        render();
+      } catch (e) { stop.disabled = false; message(out, 'err', e.message); }
+    };
     const del = el('button', { class: 'sm danger' }, 'Delete');
     del.onclick = async () => { if (await askConfirm('Delete file?', `"${name}" will be deleted permanently. This cannot be undone.`)) { await api('file_delete', { body: { id: f.id } }); load(); } };
     const badge = el('span', { class: 'badge' + (f.isPublic ? ' on' : '') }, f.isPublic ? 'shared' : 'private');
