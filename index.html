@@ -8,211 +8,229 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://kei.mt http://localhost:3000; frame-src https://challenges.cloudflare.com; worker-src 'self'; object-src 'none'; base-uri 'none'">
 <link rel="preconnect" href="https://kei.mt" crossorigin>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 15px; background: #111; color: #d0d0d0; min-height: 100vh; padding: 24px 20px 48px; }
-a { color: #bbb; } a:hover { color: #fff; }
-.wrap { width: 100%; max-width: 560px; margin: 0 auto; } .wrap.wide { max-width: 900px; }
-nav { display: flex; align-items: center; gap: 16px; margin-bottom: 40px; font-size: .85rem; }
-nav .brand { font-weight: 700; color: #fff; text-decoration: none; font-size: 1rem; margin-right: auto; }
-nav a, nav button.link { color: #888; text-decoration: none; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
-nav a:hover, nav button.link:hover { color: #fff; background: none; }
-h1 { font-size: 1.15rem; font-weight: 600; margin-bottom: 4px; color: #fff; }
-h2 { font-size: .95rem; font-weight: 600; color: #fff; margin: 24px 0 8px; }
-.sub { color: #666; font-size: .82rem; margin-bottom: 28px; line-height: 1.5; }
-p { line-height: 1.5; margin-bottom: 10px; }
-.small { font-size: .78rem; color: #666; } .foot { margin-top: 40px; }
-.drop { border: 1.5px dashed #2e2e2e; border-radius: 8px; padding: 32px 20px; text-align: center; color: #666; font-size: .85rem; cursor: pointer; position: relative; }
-.drop:hover, .drop.over { border-color: #555; color: #999; }
-.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-.drop .picked { margin-top: 8px; font-size: .78rem; color: #999; min-height: 1em; word-break: break-all; }
-label.field { display: block; margin-top: 16px; font-size: .78rem; color: #777; }
-select, input[type=text], input[type=password] { display: block; width: 100%; margin-top: 6px; padding: 9px 10px; border-radius: 6px; border: 1.5px solid #2e2e2e; background: #161616; color: #ddd; font: inherit; font-size: .85rem; }
-select:focus, input:focus { outline: none; border-color: #666; }
-.check { display: flex; gap: 8px; align-items: center; margin-top: 14px; font-size: .8rem; color: #999; }
-.actions { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
-button { padding: 9px 18px; border-radius: 6px; border: 1.5px solid #2e2e2e; background: #1a1a1a; color: #aaa; cursor: pointer; font-size: .82rem; font-family: inherit; }
-button:hover:not(:disabled) { background: #222; border-color: #444; color: #ddd; }
-button.primary { background: #e0e0e0; color: #111; border-color: #e0e0e0; }
-button.primary:hover:not(:disabled) { background: #fff; border-color: #fff; color: #111; }
-button.danger:hover:not(:disabled) { border-color: #7a2a2a; color: #e08a8a; }
-button.sm { padding: 4px 10px; font-size: .74rem; }
-button:disabled { opacity: .35; cursor: not-allowed; }
-.progress { display: none; margin-top: 20px; }
-.track { height: 3px; background: #222; border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
-.fill { height: 100%; width: 0; background: #e0e0e0; }
-.stats { display: flex; gap: 16px; font-size: .75rem; color: #555; flex-wrap: wrap; } .stats b { color: #999; font-weight: 500; }
-.msg { padding: 10px 14px; border-radius: 6px; font-size: .82rem; margin-top: 16px; line-height: 1.5; }
-.msg.err { background: #1f0e0e; border: 1px solid #3a1a1a; color: #bf6a6a; }
-.msg.ok { background: #0e1f0e; border: 1px solid #1a3a1a; color: #6abf6a; }
-.msg.info { background: #161616; border: 1px solid #2a2a2a; color: #999; }
-.msg.warn { background: #1f1a0e; border: 1px solid #3a3017; color: #bfa56a; }
-.result { margin-top: 20px; } .result-item { margin-top: 14px; }
-.result-name { font-size: .82rem; color: #888; margin-bottom: 6px; word-break: break-all; }
-.result-link { display: flex; align-items: center; gap: 8px; background: #161616; border: 1.5px solid #2a2a2a; border-radius: 6px; padding: 10px 12px; }
-.result-link code { flex: 1; font-size: .72rem; word-break: break-all; color: #888; }
-.card { border: 1.5px solid #222; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: #161616; }
-.card .name { font-weight: 600; margin-bottom: 4px; word-break: break-all; color: #fff; } .card .meta { font-size: .78rem; color: #666; }
-.tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid #222; }
-.tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 14px; }
-.tabs button.active { color: #fff; border-bottom-color: #e0e0e0; }
-.recovery { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 1rem; background: #161616; border: 1.5px solid #3a3017; border-radius: 6px; padding: 16px; word-break: break-word; color: #e8d9a8; line-height: 1.7; user-select: all; }
-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
-th { text-align: left; font-weight: 500; color: #666; font-size: .72rem; padding: 6px 8px; border-bottom: 1px solid #222; }
-td { padding: 10px 8px; border-bottom: 1px solid #1c1c1c; vertical-align: middle; }
-td.name { word-break: break-all; color: #ddd; max-width: 260px; } td.acts { white-space: nowrap; text-align: right; } td.acts button { margin-left: 4px; }
-td select { margin: 0; padding: 4px 6px; font-size: .75rem; width: auto; display: inline-block; }
-.badge { font-size: .68rem; padding: 2px 7px; border-radius: 10px; border: 1px solid #333; color: #888; white-space: nowrap; }
-.badge.on { border-color: #2a4a2a; color: #6abf6a; }
-.hidden { display: none !important; }
-.modal-back { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0, 0, 0, .65); }
-.modal { width: 100%; max-width: 380px; border: 1.5px solid #2e2e2e; border-radius: 8px; padding: 22px; background: #161616; box-shadow: 0 12px 40px rgba(0, 0, 0, .6); }
-.modal h2 { margin: 0 0 8px; } .modal p { color: #999; font-size: .85rem; word-break: break-word; margin-bottom: 0; }
-.modal .actions { justify-content: flex-end; margin-top: 20px; }
-.modal-back { animation: modal-fade .16s ease-out; } .modal { animation: modal-zoom-in .18s cubic-bezier(.2, .8, .3, 1); }
-.modal-back.out { animation: modal-fade .12s ease-in reverse forwards; pointer-events: none; } .modal-back.out .modal { animation: modal-zoom-out .12s ease-in forwards; }
-@keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes modal-zoom-in { from { transform: scale(.88); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@keyframes modal-zoom-out { from { transform: scale(1); opacity: 1; } to { transform: scale(.9); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .modal-back, .modal, .modal-back.out, .modal-back.out .modal { animation: none; } }
-.dash-head { text-align: center; margin-bottom: 8px; } .dash-head .sub { margin-bottom: 16px; }
-.view-toggle { display: inline-flex; border: 1.5px solid #2e2e2e; border-radius: 6px; overflow: hidden; margin-bottom: 24px; }
-.view-toggle button { border: 0; border-radius: 0; background: none; padding: 6px 16px; }
-.view-toggle button.active { background: #222; color: #fff; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; justify-content: center; }
-.fcard { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; border: 1.5px solid #222; border-radius: 8px; padding: 20px 16px; background: #161616; }
-.fcard .name { font-weight: 600; color: #fff; word-break: break-all; }
-.fcard .meta { font-size: .78rem; color: #666; }
-.fcard select { margin: 0; width: auto; padding: 4px 6px; font-size: .75rem; }
-.fcard .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
-.settings-sec { border: 1.5px solid #222; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: #161616; }
-.settings-sec h2 { margin-top: 0; }
-.settings-sec.danger { border-color: #3a1a1a; }
-button.danger-solid { background: #7a2a2a; border-color: #7a2a2a; color: #fff; }
-button.danger-solid:hover:not(:disabled) { background: #983535; border-color: #983535; color: #fff; }
-@media (max-width: 640px) { th:nth-child(3), td:nth-child(3) { display: none; } }
-
-/* --- animations (pure css, nothing here touches the js). all of it is switched off for prefers-reduced-motion at the bottom --- */
-@keyframes fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-@keyframes fade-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes pop-in { 0% { opacity: 0; transform: scale(.92); } 60% { opacity: 1; transform: scale(1.025); } 100% { opacity: 1; transform: scale(1); } }
-@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-@keyframes pulse-border { 0%, 100% { box-shadow: 0 0 0 0 rgba(224, 224, 224, 0); } 50% { box-shadow: 0 0 0 4px rgba(224, 224, 224, .08); } }
-@keyframes shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(2px); } 30%, 50%, 70% { transform: translateX(-4px); } 40%, 60% { transform: translateX(4px); } }
-@keyframes glow-warn { 0%, 100% { box-shadow: 0 0 0 0 rgba(232, 217, 168, 0); border-color: #3a3017; } 50% { box-shadow: 0 0 18px 0 rgba(232, 217, 168, .12); border-color: #6b5a28; } }
-@keyframes bg-drift { 0% { background-position: 0% 0%, 100% 100%; } 100% { background-position: 100% 100%, 0% 0%; } }
-
-/* page + sections */
-body { background-image: radial-gradient(60vmax 60vmax at 15% -10%, rgba(255, 255, 255, .035), transparent 60%), radial-gradient(50vmax 50vmax at 100% 110%, rgba(255, 255, 255, .03), transparent 60%); background-repeat: no-repeat; background-attachment: fixed; background-size: 140% 140%; animation: bg-drift 24s ease-in-out infinite alternate; }
-nav { animation: fade-down .45s cubic-bezier(.2, .8, .3, 1) both; }
-section:not(.hidden) > *, #recovery:not(.hidden) > *, form:not(.hidden) > * { animation: fade-up .2s ease-out both; }
-section:not(.hidden) > :nth-child(1), form:not(.hidden) > :nth-child(1) { animation-delay: 0s; }
-section:not(.hidden) > :nth-child(2), form:not(.hidden) > :nth-child(2) { animation-delay: 0s; }
-section:not(.hidden) > :nth-child(3), form:not(.hidden) > :nth-child(3) { animation-delay: 0s; }
-section:not(.hidden) > :nth-child(4), form:not(.hidden) > :nth-child(4) { animation-delay: 0s; }
-section:not(.hidden) > :nth-child(5), form:not(.hidden) > :nth-child(5) { animation-delay: 0s; }
-section:not(.hidden) > :nth-child(n+6), form:not(.hidden) > :nth-child(n+6) { animation-delay: 0s; }
-#recovery:not(.hidden) > :nth-child(2) { animation-delay: .03s; } #recovery:not(.hidden) > :nth-child(3) { animation-delay: .03s; } #recovery:not(.hidden) > :nth-child(n+4) { animation-delay: .03s; }
-.hidden { animation: none !important; }
-
-/* nav */
-nav .brand { transition: letter-spacing .25s ease, text-shadow .25s ease; }
-nav .brand:hover { letter-spacing: .04em; text-shadow: 0 0 14px rgba(255, 255, 255, .35); }
-nav a:not(.brand), nav button.link { position: relative; transition: color .2s ease; }
-nav a:not(.brand)::after, nav button.link::after { content: ''; position: absolute; left: 0; right: 0; bottom: -3px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform .25s cubic-bezier(.2, .8, .3, 1); }
-nav a:not(.brand):hover::after, nav button.link:hover::after { transform: scaleX(1); }
-a { transition: color .2s ease; }
-
-/* buttons */
-button { transition: background-color .2s ease, border-color .2s ease, color .2s ease, transform .15s ease, box-shadow .2s ease, opacity .2s ease; }
-button:hover:not(:disabled) { transform: translateY(-1px); }
-button:active:not(:disabled) { transform: translateY(0) scale(.96); transition-duration: .06s; }
-button.primary:hover:not(:disabled) { box-shadow: 0 6px 18px rgba(255, 255, 255, .14); }
-button.danger-solid:hover:not(:disabled) { box-shadow: 0 6px 18px rgba(152, 53, 53, .35); }
-button.primary:not(:disabled) { position: relative; overflow: hidden; }
-button.primary:not(:disabled)::after { content: ''; position: absolute; top: 0; left: -75%; width: 50%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55), transparent); transform: skewX(-20deg); transition: left .55s ease; pointer-events: none; }
-button.primary:hover:not(:disabled)::after { left: 130%; }
-.tabs button, .view-toggle button { transform: none !important; }
-.tabs button { position: relative; transition: color .2s ease, border-color .25s ease, background-color .2s ease; }
-.tabs button:hover:not(.active) { color: #ddd; border-bottom-color: #444; }
-.view-toggle button { transition: background-color .25s ease, color .25s ease; }
-
-/* inputs */
-select, input[type=text], input[type=password] { transition: border-color .2s ease, box-shadow .25s ease, background-color .2s ease; }
-select:hover, input:hover { border-color: #3d3d3d; }
-select:focus, input:focus { background: #1a1a1a; box-shadow: 0 0 0 3px rgba(255, 255, 255, .07); }
-label.field { transition: color .2s ease; } label.field:focus-within { color: #bbb; }
-input[type=checkbox] { transition: transform .15s ease; accent-color: #e0e0e0; cursor: pointer; } input[type=checkbox]:active { transform: scale(.8); }
-.check { transition: color .2s ease; } .check:hover { color: #ccc; }
-
-/* drop zone */
-.drop { transition: border-color .25s ease, color .25s ease, background-color .25s ease, transform .25s cubic-bezier(.2, .8, .3, 1); }
-.drop:hover { background-color: #141414; }
-.drop.over { background-color: #181818; transform: scale(1.015); animation: pulse-border 1.2s ease-in-out infinite; }
-.drop .picked:not(:empty) { animation: fade-up .3s ease both; }
-
-/* progress */
-.progress:not([style*="none"]) { animation: fade-up .4s ease both; }
-.track { position: relative; }
-.fill { transition: width .5s cubic-bezier(.2, .8, .3, 1); background-image: linear-gradient(90deg, #bdbdbd, #fff, #bdbdbd); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; box-shadow: 0 0 10px rgba(255, 255, 255, .35); border-radius: 2px; }
-.stats b { transition: color .2s ease; }
-
-/* messages */
-.msg { animation: fade-up .35s cubic-bezier(.2, .8, .3, 1) both; }
-.msg.err { animation: fade-up .35s cubic-bezier(.2, .8, .3, 1) both, shake .5s .1s cubic-bezier(.36, .07, .19, .97) both; }
-.msg.ok { animation: pop-in .4s cubic-bezier(.2, .8, .3, 1) both; }
-.msg.warn { animation: fade-up .35s cubic-bezier(.2, .8, .3, 1) both, glow-warn 3.2s 1s ease-in-out infinite; }
-.recovery { animation: pop-in .5s cubic-bezier(.2, .8, .3, 1) both, glow-warn 3.2s 1s ease-in-out infinite; }
-
-/* result links */
-.result-item { animation: fade-up .45s cubic-bezier(.2, .8, .3, 1) both; }
-.result-item:nth-child(2) { animation-delay: .08s; } .result-item:nth-child(3) { animation-delay: .16s; } .result-item:nth-child(n+4) { animation-delay: .24s; }
-.result-link { transition: border-color .25s ease, background-color .25s ease, transform .25s ease; }
-.result-link:hover { border-color: #4a4a4a; background: #1a1a1a; transform: translateX(3px); }
-
-/* cards */
-.card, .settings-sec, .fcard { transition: border-color .25s ease, transform .3s cubic-bezier(.2, .8, .3, 1), box-shadow .3s ease, background-color .25s ease; }
-.card { animation: fade-up .45s cubic-bezier(.2, .8, .3, 1) backwards; }
-.card:hover, .settings-sec:hover { border-color: #333; }
-.settings-sec.danger:hover { border-color: #5a2828; }
-.settings-sec:not(.hidden) { animation: fade-up .5s cubic-bezier(.2, .8, .3, 1) both; }
-.settings-sec:nth-of-type(2) { animation-delay: .1s; }
-.fcard { animation: pop-in .5s cubic-bezier(.2, .8, .3, 1) backwards; }
-.fcard:hover { transform: translateY(-4px); border-color: #383838; background: #191919; box-shadow: 0 14px 30px rgba(0, 0, 0, .5); }
-.fcard:nth-child(1) { animation-delay: .02s; } .fcard:nth-child(2) { animation-delay: .06s; } .fcard:nth-child(3) { animation-delay: .1s; } .fcard:nth-child(4) { animation-delay: .14s; }
-.fcard:nth-child(5) { animation-delay: .18s; } .fcard:nth-child(6) { animation-delay: .22s; } .fcard:nth-child(7) { animation-delay: .26s; } .fcard:nth-child(8) { animation-delay: .3s; } .fcard:nth-child(n+9) { animation-delay: .34s; }
-
-/* table */
-tbody tr { animation: fade-up .4s cubic-bezier(.2, .8, .3, 1) both; transition: background-color .2s ease; }
-tbody tr:hover { background: #151515; }
-tbody tr:nth-child(1) { animation-delay: .02s; } tbody tr:nth-child(2) { animation-delay: .05s; } tbody tr:nth-child(3) { animation-delay: .08s; } tbody tr:nth-child(4) { animation-delay: .11s; }
-tbody tr:nth-child(5) { animation-delay: .14s; } tbody tr:nth-child(6) { animation-delay: .17s; } tbody tr:nth-child(7) { animation-delay: .2s; } tbody tr:nth-child(8) { animation-delay: .23s; } tbody tr:nth-child(n+9) { animation-delay: .26s; }
-.badge { transition: border-color .25s ease, color .25s ease, background-color .25s ease; }
-.badge.on { animation: pop-in .4s ease both; }
-#empty:not(.hidden) { animation: fade-up .5s .15s ease both; }
-
-/* misc */
-code { transition: color .2s ease; } .result-link:hover code { color: #bbb; }
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
-  .modal-back, .modal, .modal-back.out, .modal-back.out .modal { animation: none; }
+:root {
+  color-scheme: light dark;
+  --bg: #f8fafd; --surface: #fff; --surface2: #edf2fa; --hover: rgba(31, 31, 31, .08); --line: #dadce0;
+  --text: #1f1f1f; --muted: #5f6368;
+  --accent: #0b57d0; --accent-bg: #c2e7ff; --on-accent-bg: #001d35; --btn: #0b57d0; --btn-text: #fff; --btn-hover: #0842a0;
+  --danger: #b3261e; --dsolid: #b3261e; --dsolid-text: #fff;
+  --err-bg: #fce8e6; --err-fg: #a50e0e; --ok-bg: #e6f4ea; --ok-fg: #137333; --warn-bg: #fef7e0; --warn-fg: #8a5100; --info-bg: #edf2fa; --info-fg: #444746;
+  --toast-bg: #303030; --toast-fg: #fff;
+  --shadow: 0 1px 2px rgba(60, 64, 67, .3), 0 1px 3px 1px rgba(60, 64, 67, .15);
+  --shadow-lg: 0 4px 8px 3px rgba(60, 64, 67, .15), 0 1px 3px rgba(60, 64, 67, .3);
+  --font: "Google Sans", Roboto, "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
-.still .fcard, .still tbody tr { animation: none !important; }
-.nt, .nt *, .nt::after { transition: none !important; animation: none !important; }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131314; --surface: #1b1b1c; --surface2: #282a2c; --hover: rgba(255, 255, 255, .1); --line: #444746;
+    --text: #e3e3e3; --muted: #c4c7c5;
+    --accent: #a8c7fa; --accent-bg: #004a77; --on-accent-bg: #c2e7ff; --btn: #a8c7fa; --btn-text: #062e6f; --btn-hover: #d3e3fd;
+    --danger: #f2b8b5; --dsolid: #f2b8b5; --dsolid-text: #601410;
+    --err-bg: #601410; --err-fg: #f9dedc; --ok-bg: #0f3d1e; --ok-fg: #81c995; --warn-bg: #3e2e00; --warn-fg: #fdd663; --info-bg: #282a2c; --info-fg: #c4c7c5;
+    --toast-bg: #e3e3e3; --toast-fg: #1f1f1f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .6), 0 1px 3px 1px rgba(0, 0, 0, .4);
+    --shadow-lg: 0 4px 8px 3px rgba(0, 0, 0, .4), 0 1px 3px rgba(0, 0, 0, .6);
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font: 14px/1.5 var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+:where(a) { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hidden { display: none !important; }
+h1 { font-size: 22px; font-weight: 400; margin-bottom: 4px; color: var(--text); }
+h2 { font-size: 16px; font-weight: 500; margin: 24px 0 8px; color: var(--text); }
+.sub { color: var(--muted); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+p { line-height: 1.5; margin-bottom: 10px; }
+.small { font-size: 12.5px; color: var(--muted); }
+
+/* --- buttons (:where keeps the base look at zero specificity, so any class below can override it) --- */
+:where(button, .btn) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 18px; border: 1px solid var(--line); background: transparent; color: var(--accent); font: 500 14px/1 var(--font); cursor: pointer; text-decoration: none; white-space: nowrap; transition: background-color .15s, box-shadow .15s; }
+:where(button, .btn):where(:hover:not(:disabled)) { background: var(--hover); }
+button.primary, .btn.primary { background: var(--btn); color: var(--btn-text); border-color: transparent; }
+button.primary:hover:not(:disabled), .btn.primary:hover { background: var(--btn-hover); box-shadow: var(--shadow); }
+button.danger-solid { background: var(--dsolid); color: var(--dsolid-text); border-color: transparent; }
+button.danger-solid:hover:not(:disabled) { background: var(--dsolid); box-shadow: var(--shadow); opacity: .92; }
+button.sm { height: 28px; padding: 0 12px; font-size: 12.5px; }
+button:disabled { opacity: .4; cursor: not-allowed; }
+.icon { width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--muted); text-decoration: none; }
+.icon:hover { background: var(--hover); color: var(--text); }
+.ic { width: 24px; height: 24px; fill: currentColor; flex: none; } .ic.sm { width: 18px; height: 18px; }
+
+/* --- top bar --- */
+#top { position: relative; z-index: 160; display: flex; align-items: center; gap: 8px; height: 64px; padding: 0 16px 0 12px; background: var(--bg); }
+#menu { display: none; }
+.brand { display: flex; align-items: center; gap: 10px; width: 232px; flex: none; font-size: 22px; color: var(--muted); text-decoration: none; padding-left: 4px; }
+.brand:hover { color: var(--text); }
+.logo { width: 30px; height: 30px; flex: none; }
+.search { display: flex; align-items: center; gap: 12px; flex: 1 1 auto; min-width: 0; max-width: 720px; height: 48px; padding: 0 16px; background: var(--surface2); border-radius: 24px; color: var(--muted); transition: background-color .15s, box-shadow .15s; }
+.search:focus-within { background: var(--surface); box-shadow: var(--shadow); }
+.search input[type=search] { flex: 1; min-width: 0; height: 100%; border: 0; border-radius: 0; background: none; color: var(--text); font: 16px var(--font); margin: 0; padding: 0; box-shadow: none; }
+.search input[type=search]:focus { outline: none; box-shadow: none; }
+#acct { margin-left: auto; flex: none; display: flex; align-items: center; gap: 8px; }
+.avatar { width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; background: var(--btn); color: var(--btn-text); font-size: 15px; text-transform: uppercase; }
+.avatar:hover { box-shadow: 0 0 0 4px var(--hover); }
+
+/* --- layout --- */
+#shell { display: flex; align-items: flex-start; min-height: calc(100vh - 64px); }
+#side { flex: none; width: 256px; padding: 0 12px 16px; }
+#app { flex: 1; min-width: 0; min-height: calc(100vh - 80px); background: var(--surface); border-radius: 16px; margin: 0 16px 16px 0; padding: 20px 24px 48px; }
+#app > section:not(#v-dashboard) { max-width: 600px; margin: 0 auto; }
+section:not(.hidden) { animation: fade-in .18s ease-out; }
+body.guest #shell { justify-content: center; }
+body.guest #side { display: none; }
+body.guest #app { flex: 0 1 600px; margin: 24px 16px; padding: 28px 32px 36px; }
+#scrim { display: none; }
+
+.newbtn { display: inline-flex; align-items: center; gap: 12px; height: 56px; padding: 0 24px 0 16px; margin: 8px 0 16px; border-radius: 16px; background: var(--accent-bg); color: var(--on-accent-bg); font-weight: 500; text-decoration: none; box-shadow: var(--shadow); transition: box-shadow .15s; }
+.newbtn:hover { box-shadow: var(--shadow-lg); color: var(--on-accent-bg); }
+.navi { display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 16px 0 12px; border-radius: 20px; color: var(--text); text-decoration: none; }
+.navi .ic { color: var(--muted); }
+.navi:hover { background: var(--hover); color: var(--text); }
+.navi.on { background: var(--accent-bg); color: var(--on-accent-bg); font-weight: 500; }
+.navi.on .ic { color: var(--on-accent-bg); }
+.sstat { padding: 16px 16px 0; }
+
+/* --- forms --- */
+label.field { display: block; margin-top: 16px; font-size: 13px; color: var(--muted); }
+select, input[type=text], input[type=password] { display: block; width: 100%; height: 40px; margin-top: 6px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--text); font: 14px var(--font); transition: border-color .15s, box-shadow .15s; }
+select:hover, input:hover { border-color: var(--muted); }
+select:focus, input[type=text]:focus, input[type=password]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+select option { background: var(--surface); color: var(--text); }
+.check { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; font-size: 13px; color: var(--muted); cursor: pointer; }
+input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; margin-top: 2px; flex: none; cursor: pointer; }
+.actions { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+.drop { border: 2px dashed var(--line); border-radius: 16px; padding: 44px 20px; text-align: center; color: var(--muted); position: relative; cursor: pointer; transition: border-color .15s, background-color .15s; }
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--surface2); }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.drop .ic { width: 48px; height: 48px; color: var(--accent); }
+.drop-title { margin-top: 8px; font-size: 16px; color: var(--text); }
+.drop .picked { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 1em; word-break: break-all; }
+
+/* --- progress, messages, results --- */
+.progress { display: none; margin-top: 24px; }
+.track { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.fill { height: 100%; width: 0; background: var(--accent); border-radius: 2px; transition: width .3s; }
+.stats { display: flex; gap: 16px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; } .stats b { color: var(--text); font-weight: 500; }
+.msg { padding: 12px 16px; border-radius: 8px; font-size: 13.5px; margin-top: 16px; line-height: 1.5; }
+.msg.err { background: var(--err-bg); color: var(--err-fg); }
+.msg.ok { background: var(--ok-bg); color: var(--ok-fg); }
+.msg.info { background: var(--info-bg); color: var(--info-fg); }
+.msg.warn { background: var(--warn-bg); color: var(--warn-fg); }
+.result { margin-top: 20px; } .result-item { margin-top: 14px; }
+.result-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; word-break: break-all; }
+.result-link { display: flex; align-items: center; gap: 8px; background: var(--surface2); border-radius: 8px; padding: 8px 8px 8px 12px; }
+.result-link code { flex: 1; font-size: 12px; word-break: break-all; color: var(--muted); }
+.card { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.card .name { font-weight: 500; margin-bottom: 4px; word-break: break-all; font-size: 16px; } .card .meta { font-size: 13px; color: var(--muted); }
+.dlcard { display: flex; align-items: center; gap: 16px; }
+.tabs { display: flex; margin-bottom: 24px; border-bottom: 1px solid var(--line); }
+.tabs button { height: 48px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; padding: 0 16px; color: var(--muted); }
+.tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
+.recovery { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 16px; background: var(--warn-bg); color: var(--warn-fg); border-radius: 8px; padding: 16px; word-break: break-word; line-height: 1.7; user-select: all; }
+.settings-sec { border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.settings-sec h2 { margin-top: 0; } .settings-sec.danger { border-color: var(--danger); }
+
+/* --- dialog, menu, toast --- */
+.modal-back { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0, 0, 0, .4); animation: fade-in .16s ease-out; }
+.modal { width: 100%; max-width: 400px; border-radius: 28px; padding: 24px; background: var(--surface); box-shadow: var(--shadow-lg); animation: zoom-in .18s cubic-bezier(.2, .8, .3, 1); }
+.modal h2 { margin: 0 0 12px; font-size: 22px; font-weight: 400; } .modal p { color: var(--muted); word-break: break-word; margin-bottom: 0; }
+.modal select { margin-top: 16px; }
+.modal .actions { justify-content: flex-end; margin-top: 24px; }
+.modal-back.out { animation: fade-in .12s ease-in reverse forwards; pointer-events: none; } .modal-back.out .modal { animation: zoom-in .12s ease-in reverse forwards; }
+.menu { position: fixed; z-index: 300; min-width: 220px; max-width: 320px; padding: 8px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-lg); }
+.mi { display: flex; width: 100%; justify-content: flex-start; gap: 16px; height: 40px; padding: 0 16px; border: 0; border-radius: 0; color: var(--text); font-weight: 400; }
+.mi .ic { color: var(--muted); } .mi.danger, .mi.danger .ic { color: var(--danger); }
+.msep { height: 1px; margin: 8px 0; background: var(--line); }
+.mhead { padding: 8px 16px; color: var(--muted); font-size: 13px; word-break: break-all; }
+.toast { position: fixed; left: 24px; bottom: 24px; z-index: 400; max-width: calc(100vw - 48px); padding: 14px 16px; border-radius: 4px; background: var(--toast-bg); color: var(--toast-fg); box-shadow: var(--shadow-lg); animation: fade-in .15s ease-out; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes zoom-in { from { transform: scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* --- my files --- */
+.dhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.dhead h1 { margin: 0; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+.seg button { width: 52px; height: 36px; padding: 0; border: 0; border-radius: 0; color: var(--muted); }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--accent-bg); color: var(--on-accent-bg); }
+.chips { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.chips button { height: 32px; padding: 0 14px; border-radius: 8px; color: var(--text); }
+.chips button.on { background: var(--accent-bg); color: var(--on-accent-bg); border-color: transparent; }
+#dash-sub { margin-bottom: 8px; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+th { position: sticky; top: 0; z-index: 1; background: var(--surface); text-align: left; font-weight: 500; color: var(--muted); font-size: 13px; padding: 0 12px; height: 44px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th .ic { vertical-align: middle; margin-left: 4px; }
+td { padding: 0 12px; height: 52px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+tbody tr:hover { background: var(--hover); }
+.c-share { width: 130px; } .c-size { width: 100px; } .c-date { width: 130px; } .c-exp { width: 110px; } .c-act { width: 150px; text-align: right; }
+td.c-name { color: var(--text); }
+.namecell { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.namecell a, .namecell span:not(.ficon) { overflow: hidden; text-overflow: ellipsis; color: var(--text); text-decoration: none; }
+.namecell a:hover { text-decoration: underline; }
+.share { display: inline-flex; align-items: center; gap: 6px; } .share.on { color: var(--accent); }
+.racts { display: flex; justify-content: flex-end; opacity: 0; transition: opacity .12s; }
+tr:hover .racts, tr:focus-within .racts { opacity: 1; }
+.racts .icon { width: 36px; height: 36px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; margin-top: 8px; }
+.fcard { background: var(--surface2); border-radius: 12px; padding: 8px; transition: box-shadow .15s; }
+.fcard:hover { box-shadow: var(--shadow); }
+.thumb { position: relative; display: flex; align-items: center; justify-content: center; height: 130px; border-radius: 8px; background: var(--surface); }
+.cshare { position: absolute; top: 8px; left: 8px; display: inline-flex; color: var(--muted); } .cshare.on { color: var(--accent); }
+.cfoot { display: flex; align-items: center; gap: 10px; padding: 8px 0 0 4px; }
+.ctext { flex: 1; min-width: 0; }
+.ctext a, .ctext > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); text-decoration: none; font-weight: 500; }
+.ctext a:hover { text-decoration: underline; }
+.cmeta { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cfoot .icon { width: 32px; height: 32px; }
+.empty { text-align: center; padding: 64px 16px; color: var(--muted); }
+.empty .ic.big { width: 96px; height: 96px; color: var(--accent); opacity: .6; }
+.empty h2 { margin: 16px 0 8px; font-size: 22px; font-weight: 400; } .empty .btn { margin-top: 16px; }
+.ficon { display: inline-flex; flex: none; color: var(--muted); } .ficon.xl .ic { width: 56px; height: 56px; }
+.k-red { color: #ea4335; } .k-blue { color: #4285f4; } .k-green { color: #34a853; } .k-yellow { color: #f9ab00; } .k-orange { color: #fa7b17; }
+
+@media (max-width: 900px) {
+  #menu { display: inline-flex; }
+  body.guest #menu { display: none; }
+  .brand { width: auto; }
+  #side { position: fixed; top: 64px; bottom: 0; left: 0; z-index: 150; width: 280px; background: var(--bg); transform: translateX(-100%); transition: transform .2s; box-shadow: var(--shadow-lg); overflow-y: auto; }
+  body.nav-open #side { transform: none; }
+  body.nav-open #scrim { display: block; position: fixed; inset: 0; z-index: 140; background: rgba(0, 0, 0, .32); }
+  #app { margin: 0 8px 8px; padding: 16px; }
+  body.guest #app { margin: 16px 8px; padding: 20px 16px 28px; }
+  .c-share, .c-date { display: none; }
+}
+@media (max-width: 600px) {
+  #brandName { display: none; }
+  .c-exp { display: none; }
+  .c-act { width: 56px; } .c-size { width: 96px; }
+  td, th { padding: 0 8px; }
+  .racts { opacity: 1; } .racts .icon:not(:last-child) { display: none; }
+  .toast { left: 16px; right: 16px; bottom: 16px; max-width: none; }
+}
+@media (hover: none) { .racts { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-<div class="wrap" id="app">
-  <nav id="nav"></nav>
+<header id="top">
+  <button class="icon" id="menu" type="button" aria-label="Main menu"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
+  <a class="brand" href="/"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="#8ab4f8" d="M12 2 21 7 12 12 3 7z"/><path fill="#4285f4" d="M3 7 12 12V22L3 17z"/><path fill="#1a73e8" d="M21 7 12 12V22L21 17z"/></svg><span id="brandName">PetaBox</span></a>
+  <div class="search hidden" id="searchbox"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input type="search" id="q" placeholder="Search in My files" aria-label="Search in My files" autocomplete="off" spellcheck="false"></div>
+  <div id="acct"></div>
+</header>
+<div id="scrim"></div>
+<div id="shell">
+<aside id="side"></aside>
+<main id="app">
 
   <!-- upload: / -->
   <section id="v-upload" class="hidden">
     <h1>Upload</h1>
     <p class="sub" id="up-sub"></p>
-    <div class="drop" id="drop"><input type="file" id="file" multiple>Drop files here, or click to choose<div class="picked" id="picked"></div></div>
+    <div class="drop" id="drop"><input type="file" id="file" multiple><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg><div class="drop-title">Drop files here</div><div>or click to choose files</div><div class="picked" id="picked"></div></div>
     <label class="field">Keep the file for <select id="expiry"></select></label>
-    <label class="check hidden" id="pubRow"><input type="checkbox" id="pub" checked> Anyone with the link can download (you can change this later in My files)</label>
+    <label class="check hidden" id="pubRow"><input type="checkbox" id="pub"> <span>Allow anyone with the link to download. Off by default, so only you can open your files. You can change this later in My files.</span></label>
     <div id="ts"></div>
     <div class="actions"><button class="primary" id="btn">Upload</button><button id="cancel" disabled>Cancel</button></div>
     <div class="progress" id="prog">
@@ -226,7 +244,7 @@ code { transition: color .2s ease; } .result-link:hover code { color: #bbb; }
   <section id="v-download" class="hidden">
     <h1>Download</h1>
     <p class="sub">Decrypted in your browser. The server only holds scrambled data.</p>
-    <div class="card"><div class="name" id="fname">Loading...</div><div class="meta" id="fmeta"></div></div>
+    <div class="card dlcard"><div id="ficon"></div><div><div class="name" id="fname">Loading...</div><div class="meta" id="fmeta"></div></div></div>
     <div class="progress" id="d-prog"><div class="track"><div class="fill" id="d-fill"></div></div><div class="stats"><span><b id="d-pct">0%</b></span><span id="d-status"></span></div></div>
     <div id="d-out"></div>
     <div class="actions"><button class="primary" id="dl" disabled>Download</button></div>
@@ -254,7 +272,7 @@ code { transition: color .2s ease; } .result-link:hover code { color: #bbb; }
       <h1>Save your recovery key</h1><p class="sub">This is shown only once. If you forget your password, this key is the only way to get your files back.</p>
       <div class="recovery" id="rk"></div>
       <div class="actions"><button id="rk-copy">Copy</button><button id="rk-save">Download as .txt</button></div>
-      <label class="check"><input type="checkbox" id="rk-ok"> I have saved my recovery key somewhere safe</label>
+      <label class="check"><input type="checkbox" id="rk-ok"> <span>I have saved my recovery key somewhere safe</span></label>
       <div class="actions"><button class="primary" id="rk-go" disabled>Continue</button></div>
     </div>
     <form id="recover" class="hidden">
@@ -267,17 +285,18 @@ code { transition: color .2s ease; } .result-link:hover code { color: #bbb; }
     <div id="l-out"></div>
   </section>
 
-  <!-- my files: /dashboard -->
+  <!-- my files: /?dashboard -->
   <section id="v-dashboard" class="hidden">
-    <div class="dash-head">
+    <div class="dhead">
       <h1>My files</h1>
-      <p class="sub" id="dash-sub">Only you can see this list. File names are encrypted, the server can't read them.</p>
-      <div class="view-toggle" id="vtoggle"><button data-mode="grid">Grid</button><button data-mode="list">List</button></div>
+      <div class="seg" id="vtoggle" role="group" aria-label="View"><button type="button" data-mode="list" title="List view" aria-label="List view"></button><button type="button" data-mode="grid" title="Grid view" aria-label="Grid view"></button></div>
     </div>
+    <div class="chips" id="chips" role="group" aria-label="Filter"><button type="button" data-f="all">All</button><button type="button" data-f="shared">Shared</button><button type="button" data-f="private">Private</button></div>
+    <p class="small" id="dash-sub"></p>
     <div id="gate"></div><div id="dash-out"></div>
     <div id="grid" class="grid hidden"></div>
-    <table id="tbl" class="hidden"><thead><tr><th>Name</th><th>Size</th><th>Expires</th><th>Keep for</th><th></th></tr></thead><tbody id="rows"></tbody></table>
-    <p id="empty" class="small hidden" style="text-align:center">No files yet. <a href="/">Upload something.</a></p>
+    <table id="tbl" class="hidden"><thead><tr><th class="c-name">Name</th><th class="c-share">Sharing</th><th class="c-size">Size</th><th class="c-date">Uploaded</th><th class="c-exp">Expires</th><th class="c-act"></th></tr></thead><tbody id="rows"></tbody></table>
+    <div id="empty" class="empty hidden"></div>
   </section>
 
   <!-- settings: /?settings -->
@@ -304,6 +323,7 @@ code { transition: color .2s ease; } .result-link:hover code { color: #bbb; }
       <div id="delout"></div>
     </div>
   </section>
+</main>
 </div>
 
 <script src="/argon2.min.js"></script>
@@ -420,23 +440,115 @@ function el(tag, props = {}, ...kids) {
   n.append(...kids.flat().filter((x) => x != null));
   return n;
 }
-// a styled replacement for confirm(). resolves true / false. escape or a click outside cancels
-function askConfirm(title, text, okLabel = 'Delete') {
+// --- icons (material-style paths, inline so no extra requests and nothing for the CSP to block) ---
+const ICONS = {
+  add: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+  folder: 'M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z',
+  settings: 'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z',
+  logout: 'M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z',
+  more: 'M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
+  download: 'M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z',
+  link: 'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z',
+  trash: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+  lock: 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z',
+  people: 'M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z',
+  clock: 'M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z',
+  list: 'M4 14h4v-4H4v4zm0 5h4v-4H4v4zM4 9h4V5H4v4zm5 5h12v-4H9v4zm0 5h12v-4H9v4zM9 5v4h12V5H9z',
+  grid: 'M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z',
+  up: 'M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z',
+  file: 'M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z',
+  doc: 'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z',
+  sheet: 'M3 3v18h18V3H3zm8 16H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z',
+  image: 'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z',
+  video: 'M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z',
+  audio: 'M12 3v9.28c-.47-.17-.97-.28-1.5-.28C8.01 12 6 14.01 6 16.5S8.01 21 10.5 21c2.31 0 4.2-1.75 4.45-4H15V6h4V3h-7z',
+  archive: 'M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z',
+  code: 'M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z',
+  cloud: 'M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z',
+};
+// only ever fed the fixed paths above, never file names or anything else from outside
+function icon(name, cls = '') {
+  const t = document.createElement('template');
+  t.innerHTML = `<svg viewBox="0 0 24 24" class="ic ${cls}" aria-hidden="true"><path d="${ICONS[name] || ICONS.file}"/></svg>`;
+  return t.content.firstChild;
+}
+// [extension, icon, colour class]
+const KINDS = [
+  [/^(jpe?g|png|gif|webp|svg|bmp|avif|heic|tiff?)$/, 'image', 'k-red'], [/^(mp4|mkv|mov|avi|webm|m4v|wmv)$/, 'video', 'k-red'],
+  [/^(mp3|wav|flac|ogg|m4a|aac|opus)$/, 'audio', 'k-orange'], [/^pdf$/, 'doc', 'k-red'],
+  [/^(docx?|odt|rtf|txt|md)$/, 'doc', 'k-blue'], [/^(xlsx?|csv|ods)$/, 'sheet', 'k-green'], [/^(pptx?|odp|key)$/, 'doc', 'k-yellow'],
+  [/^(zip|rar|7z|tar|gz|bz2|xz|iso)$/, 'archive', ''], [/^(js|ts|py|html?|css|json|php|c|cpp|h|java|go|rs|sh|xml|ya?ml)$/, 'code', ''],
+];
+function fileIcon(name, size = '') {
+  const ext = (String(name).match(/\.([a-z0-9]+)$/i)?.[1] || '').toLowerCase(), k = KINDS.find(([re]) => re.test(ext));
+  return el('span', { class: `ficon ${size} ${k ? k[2] : ''}` }, icon(k ? k[1] : 'file'));
+}
+
+// a small popup menu next to a button (or at the mouse position for a right click). items: {icon, label, run, danger}, {head}, '-', or a falsy value to skip
+let openMenu = null;
+function popMenu(anchor, items, at = null) {
+  if (openMenu && !at && openMenu.anchor === anchor) { openMenu.close(); return; }   // clicking the same button again closes it
+  openMenu?.close();
+  const m = el('div', { class: 'menu', role: 'menu' }), btns = [];
+  for (const it of items) {
+    if (!it) continue;
+    if (it === '-') m.append(el('div', { class: 'msep' }));
+    else if (it.head) m.append(el('div', { class: 'mhead' }, it.head));
+    else {
+      const b = el('button', { class: 'mi' + (it.danger ? ' danger' : ''), role: 'menuitem', type: 'button' }, icon(it.icon), it.label);
+      b.onclick = () => { close(); it.run(); }; btns.push(b); m.append(b);
+    }
+  }
+  function close(refocus) {
+    m.remove(); document.removeEventListener('mousedown', away, true); document.removeEventListener('keydown', key, true);
+    removeEventListener('scroll', dismiss, true); removeEventListener('resize', dismiss);
+    if (openMenu?.m === m) openMenu = null;
+    if (refocus === true && anchor.focus) anchor.focus();
+  }
+  const dismiss = () => close();
+  const away = (e) => { if (!m.contains(e.target) && !(anchor.contains && anchor.contains(e.target))) close(); };
+  const key = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); close(true); }
+    else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && btns.length) { e.preventDefault(); const i = btns.indexOf(document.activeElement); btns[(i + (e.key === 'ArrowDown' ? 1 : -1) + btns.length) % btns.length].focus(); }
+    else if (e.key === 'Tab') close();
+  };
+  document.body.append(m);
+  const w = m.offsetWidth, h = m.offsetHeight;
+  let left, top;
+  if (at) { left = at.x; top = at.y; }
+  else { const r = anchor.getBoundingClientRect(); left = r.right - w; top = r.bottom + 4; if (top + h > innerHeight - 8) top = r.top - h - 4; }
+  m.style.left = Math.max(8, Math.min(left, innerWidth - w - 8)) + 'px'; m.style.top = Math.max(8, Math.min(top, innerHeight - h - 8)) + 'px';
+  openMenu = { m, anchor, close };
+  document.addEventListener('mousedown', away, true); document.addEventListener('keydown', key, true);
+  addEventListener('scroll', dismiss, true); addEventListener('resize', dismiss);
+  if (!at) btns[0]?.focus({ preventScroll: true });
+}
+
+// the small black message at the bottom left
+let toastTimer;
+function toast(text) {
+  document.querySelector('.toast')?.remove(); clearTimeout(toastTimer);
+  const t = el('div', { class: 'toast', role: 'status' }, text); document.body.append(t);
+  toastTimer = setTimeout(() => t.remove(), 3500);
+}
+
+// a styled replacement for confirm(). resolves true / false. escape or a click outside cancels. `extra` is an optional form control shown under the text
+function askConfirm(title, text, okLabel = 'Delete', extra = null, okClass = 'danger-solid') {
   return new Promise((resolve) => {
     const prev = document.activeElement;
-    const cancel = el('button', {}, 'Cancel'), ok = el('button', { class: 'danger-solid' }, okLabel);
+    const cancel = el('button', {}, 'Cancel'), ok = el('button', { class: okClass }, okLabel);
     const back = el('div', { class: 'modal-back' }, el('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
-      el('h2', {}, title), el('p', {}, text), el('div', { class: 'actions' }, cancel, ok)));
+      el('h2', {}, title), el('p', {}, text), extra, el('div', { class: 'actions' }, cancel, ok)));
     let closed = false;
     const done = (v) => {
       if (closed) return; closed = true;
-      document.removeEventListener('keydown', onKey, true); back.classList.add('out');   // zoom out, then remove
+      document.removeEventListener('keydown', onKey, true); back.classList.add('out');   // fade out, then remove
       setTimeout(() => back.remove(), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 130);
       if (prev && prev.focus) prev.focus(); resolve(v);
     };
     const onKey = (e) => {
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(false); }
-      else if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === cancel ? ok : cancel).focus(); }
+      else if (e.key === 'Tab') { e.preventDefault(); const f = [...back.querySelectorAll('select, button')], i = f.indexOf(document.activeElement); f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus(); }
     };
     cancel.onclick = () => done(false); ok.onclick = () => done(true);
     back.addEventListener('mousedown', (e) => { if (e.target === back) done(false); });
@@ -452,6 +564,8 @@ function timeLeft(iso) {
   return s <= 0 ? 'Expired' : s < 3600 ? Math.ceil(s / 60) + ' min' : s < 86400 ? Math.floor(s / 3600) + ' h' : Math.floor(s / 86400) + ' days';
 }
 const LABELS = { '1h': '1 hour', '6h': '6 hours', '1d': '1 day', '3d': '3 days', '7d': '1 week', '14d': '2 weeks', '30d': '1 month', '90d': '3 months', '180d': '6 months', '365d': '1 year', never: 'Never (keep forever)' };
+const expiryKeys = () => ['never', ...cfg.userExpiry.filter((k) => k !== 'never')];   // "never" first
+const fmtDate = (iso) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 const message = (box, kind, text) => box.replaceChildren(el('div', { class: 'msg ' + kind }, text));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -477,17 +591,29 @@ const setMaster = (k) => { try { sessionStorage.setItem('pb_mk', b64u(k)); } cat
 const query = new URLSearchParams(location.search);
 const view = query.has('d') ? 'download' : ['login', 'dashboard', 'settings'].find((v) => query.has(v)) || 'upload';
 $('v-' + view).classList.remove('hidden');
-if (view === 'dashboard') $('app').classList.add('wide');
 
 const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* */ } } };
 let cfg = null; try { cfg = JSON.parse(store.get('pb_cfg')); } catch { /* none yet */ }   // last known settings, refreshed below
+const logout = async () => { try { await api('logout', { body: {} }); } catch { /* */ } sessionStorage.clear(); store.set('pb_name', ''); location.href = '/'; };
+// top bar + sidebar. signed out: just the brand and the log in / sign up buttons
 function drawNav(name) {
-  $('nav').replaceChildren(
-    el('a', { class: 'brand', href: '/' }, cfg?.siteName || 'PetaBox'), el('a', { href: '/' }, 'Upload'),
-    ...(name ? [el('a', { href: '/?dashboard' }, 'My files'), el('a', { href: '/?settings' }, 'Settings'),
-      el('button', { class: 'link', onclick: async () => { try { await api('logout', { body: {} }); } catch { /* */ } sessionStorage.clear(); store.set('pb_name', ''); location.href = '/'; } }, `Log out (${name})`)]
-      : [el('a', { href: '/?login' }, 'Log in / Sign up')]));
+  document.body.classList.toggle('guest', !name);
+  $('brandName').textContent = cfg?.siteName || 'PetaBox';
+  if (!name) {
+    $('acct').replaceChildren(el('a', { class: 'btn', href: '/?login' }, 'Log in'), el('a', { class: 'btn primary', href: '/?login#signup' }, 'Sign up'));
+    $('side').replaceChildren(); return;
+  }
+  const av = el('button', { class: 'avatar', type: 'button', title: name, 'aria-label': 'Account', 'aria-haspopup': 'menu' }, name[0]);
+  av.onclick = () => popMenu(av, [{ head: name }, '-', { icon: 'settings', label: 'Settings', run: () => { location.href = '/?settings'; } }, { icon: 'logout', label: 'Log out', run: logout }]);
+  $('acct').replaceChildren(av);
+  const item = (href, ic, label, on) => el('a', { class: 'navi' + (on ? ' on' : ''), href }, icon(ic), label);
+  $('side').replaceChildren(
+    el('a', { class: 'newbtn', href: '/' }, icon('add'), 'New upload'),
+    item('/?dashboard', 'folder', 'My files', view === 'dashboard'), item('/?settings', 'settings', 'Settings', view === 'settings'),
+    el('div', { class: 'sstat small', id: 'sstat' }));
 }
+$('menu').addEventListener('click', () => document.body.classList.toggle('nav-open'));
+$('scrim').addEventListener('click', () => document.body.classList.remove('nav-open'));
 drawNav(store.get('pb_name'));   // guess from last visit, corrected as soon as the server answers
 
 // ask the server for everything at once
@@ -520,7 +646,7 @@ function ensureMaster(box) {
 async function mountTurnstile(box) {
   if (!cfg.turnstileSiteKey) return { token: () => '', reset() {} };
   await new Promise((ok, no) => { const s = el('script', { src: 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit' }); s.onload = ok; s.onerror = no; document.head.append(s); });
-  const id = turnstile.render(box, { sitekey: cfg.turnstileSiteKey, theme: 'dark' });
+  const id = turnstile.render(box, { sitekey: cfg.turnstileSiteKey, theme: 'auto' });
   return { token: () => turnstile.getResponse(id) || '', reset: () => turnstile.reset(id) };
 }
 
@@ -530,10 +656,10 @@ async function uploadPage() {
   const ts = await mountTurnstile($('ts'));
   let master = user ? getMaster() : null, files = [], aborter = null, cancelled = false;
 
-  $('expiry').replaceChildren(...(user ? cfg.userExpiry : cfg.anonExpiry).map((k) => el('option', { value: k }, LABELS[k] || k)));
-  $('expiry').value = user ? '30d' : '1d';
+  $('expiry').replaceChildren(...(user ? expiryKeys() : cfg.anonExpiry).map((k) => el('option', { value: k }, LABELS[k] || k)));
+  $('expiry').value = user ? 'never' : '1d';   // signed in: keep forever unless you pick something else
   if (user) {
-    $('up-sub').textContent = `Logged in as ${user.username}. Up to ${cfg.maxUser / GB} GB per file, no storage limit, keep files as long as you like. Everything is encrypted in your browser first.`;
+    $('up-sub').textContent = `Logged in as ${user.username}. Up to ${cfg.maxUser / GB} GB per file, no storage limit. Files are private and kept forever unless you choose otherwise. Everything is encrypted in your browser first.`;
     $('pubRow').classList.remove('hidden');
   } else $('up-sub').textContent = `Files are encrypted in your browser before they leave your device. Up to ${cfg.maxAnon / GB} GB per file, kept for up to 1 month. Log in for ${cfg.maxUser / GB} GB files and unlimited storage time.`;
 
@@ -650,7 +776,7 @@ async function uploadPage() {
     }
     $('btn').disabled = false; $('cancel').disabled = true; $('pstatus').textContent = ok === files.length ? 'Done' : '';
     if (ok) result.prepend(el('div', { class: 'msg info' }, user
-      ? 'Saved to My files. Anyone you give the full link to (including the part after the #) can decrypt it, if sharing is on.'
+      ? ($('pub').checked ? 'Saved to My files. Anyone you give the full link to (including the part after the #) can download it.' : 'Saved to My files as private. Only you can open it. To let someone else download it, turn sharing on in My files.')
       : "Anyone with this full link can download the file. The part after the # is the decryption key. We never see it, so we can't recover it. Keep the link safe."));
   });
 }
@@ -668,7 +794,7 @@ async function downloadPage() {
   } catch { bail('Wrong key', "This link's key does not match the file. Make sure you copied the whole link."); return; }
 
   document.title = `${info.name} - ${cfg.siteName || 'PetaBox'}`;
-  $('fname').textContent = info.name;
+  $('fname').textContent = info.name; $('ficon').replaceChildren(fileIcon(info.name, 'xl'));
   $('fmeta').textContent = `${fmt(info.size)} - expires: ${meta.expiresAt ? timeLeft(meta.expiresAt) : 'never'}${meta.owner ? ' - your file' : ''}`;
   dl.disabled = false;
 
@@ -816,82 +942,120 @@ async function loginPage() {
 // --- my files ---
 async function dashboardPage() {
   if (!user) { location.replace('/?login'); return; }
+  $('searchbox').classList.remove('hidden');
+  for (const b of $('vtoggle').children) b.prepend(icon(b.dataset.mode));
+  document.querySelector('th.c-name').append(icon('up', 'sm'));   // the list is always A-Z
   const master = await ensureMaster($('gate')), out = $('dash-out');
-  let items = [], mode = 'grid';
-  try { mode = localStorage.getItem('pb_view') === 'list' ? 'list' : 'grid'; } catch { /* */ }
+  let items = [], mode = 'list', filter = 'all', needle = '', loaded = false;
+  try { mode = localStorage.getItem('pb_view') === 'grid' ? 'grid' : 'list'; } catch { /* */ }
 
-  async function load(animate = true) {
-    const { files } = await api('files'); let total = 0; items = [];
+  // file names are encrypted, so the server can't sort them. we sort after decrypting: A-Z, ignoring case, "file2" before "file10"
+  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+  const byName = (a, b) => (a.bad - b.bad) || collator.compare(a.name, b.name) || (a.f.id < b.f.id ? -1 : 1);   // names that failed to decrypt go last
+
+  function stats() {
+    const total = items.reduce((s, it) => s + it.f.size, 0), n = items.length;
+    $('dash-sub').textContent = `${n} file${n === 1 ? '' : 's'}, ${fmt(total)} stored. No storage limit. File names are encrypted, the server can't read them.`;
+    const st = $('sstat'); if (st) st.textContent = `${n} file${n === 1 ? '' : 's'} - ${fmt(total)} used`;
+  }
+  async function load() {
+    const { files } = await api('files');
     // decrypt all the names at once instead of one after another
     items = await Promise.all(files.map(async (f) => {
-      let name = '(could not decrypt)', key = null;
-      try { key = await unwrapFileKey(master, f.wrappedKey); name = (await decryptMeta((await fileKeys(key)).meta, f.encMeta)).name; } catch { /* leave placeholder */ }
-      return { f, name, key };
+      let name = '(could not decrypt)', key = null, bad = true;
+      try { key = await unwrapFileKey(master, f.wrappedKey); name = (await decryptMeta((await fileKeys(key)).meta, f.encMeta)).name; bad = false; } catch { /* leave placeholder */ }
+      return { f, name, key, bad };
     }));
-    for (const { f } of items) total += f.size;
-    $('dash-sub').textContent = `${files.length} file${files.length === 1 ? '' : 's'}, ${fmt(total)} stored. No storage limit. File names are encrypted, the server can't read them.`;
-    render(animate);
+    items.sort(byName); loaded = true;
+    stats(); render();
   }
-  // a rebuilt item sits under the mouse already, so its hover look is applied instantly (class 'nt') instead of animating in again
-  function build(it, animate) {
-    const e = mode === 'grid' ? card(it.f, it.name, it.key) : row(it.f, it.name, it.key);
-    if (!animate) { e.classList.add('nt'); e.addEventListener('mouseleave', () => e.classList.remove('nt'), { once: true }); }
-    return e;
-  }
-  // redraw just one item, in place
-  function refresh(f) {
-    const it = items.find((i) => i.f === f); if (!it || !it.el.isConnected) return;
-    const old = it.el; it.el = build(it, false); old.replaceWith(it.el);
-  }
-  function render(animate = false) {   // animate only when the list is first drawn or the layout changes, not after a small change like share / stop sharing
-    for (const e of [$('grid'), $('tbl')]) e.classList.toggle('still', !animate);
-    for (const b of $('vtoggle').children) b.classList.toggle('active', b.dataset.mode === mode);
-    for (const it of items) it.el = build(it, animate);
-    $('grid').replaceChildren(...(mode === 'grid' ? items.map((it) => it.el) : []));
-    $('rows').replaceChildren(...(mode === 'list' ? items.map((it) => it.el) : []));
-    $('grid').classList.toggle('hidden', mode !== 'grid' || !items.length);
-    $('tbl').classList.toggle('hidden', mode !== 'list' || !items.length);
-    $('empty').classList.toggle('hidden', !!items.length);
+
+  function render() {
+    for (const b of $('vtoggle').children) b.classList.toggle('on', b.dataset.mode === mode);
+    for (const b of $('chips').children) b.classList.toggle('on', b.dataset.f === filter);
+    const s = needle.trim().toLowerCase();
+    const list = items.filter((it) => (filter === 'all' || (filter === 'shared') === it.f.isPublic) && (!s || it.name.toLowerCase().includes(s)));
+    $('grid').replaceChildren(...(mode === 'grid' ? list.map((it) => card(it)) : []));
+    $('rows').replaceChildren(...(mode === 'list' ? list.map((it) => row(it)) : []));
+    $('grid').classList.toggle('hidden', mode !== 'grid' || !list.length);
+    $('tbl').classList.toggle('hidden', mode !== 'list' || !list.length);
+    const em = $('empty'); em.classList.toggle('hidden', !loaded || !!list.length);
+    if (loaded && !list.length) em.replaceChildren(...(items.length
+      ? [el('h2', {}, 'No matching files'), el('p', {}, 'Try a different search or filter.')]
+      : [icon('cloud', 'big'), el('h2', {}, 'Upload your first file'), el('p', {}, 'Files are encrypted in your browser and private until you choose to share them.'), el('a', { class: 'btn primary', href: '/' }, 'Upload')]));
   }
   $('vtoggle').addEventListener('click', (e) => {
-    const m = e.target.dataset?.mode; if (!m) return;
-    mode = m; try { localStorage.setItem('pb_view', m); } catch { /* */ } render(true);
+    const m = e.target.closest('[data-mode]')?.dataset.mode; if (!m) return;
+    mode = m; try { localStorage.setItem('pb_view', m); } catch { /* */ } render();
   });
+  $('chips').addEventListener('click', (e) => { const f = e.target.closest('[data-f]')?.dataset.f; if (f) { filter = f; render(); } });
+  $('q').addEventListener('input', () => { needle = $('q').value; render(); });
+  $('q').addEventListener('keydown', (e) => { if (e.key === 'Escape') { $('q').value = needle = ''; render(); } });
 
-  // the controls are the same in both layouts
-  function controls(f, name, key) {
+  // everything you can do with one file. the same actions are used by the hover buttons, the menu and the right-click menu
+  function actions(it) {
+    const { f, name, key } = it;
     const link = key ? `${location.origin}/?d=${f.id}#${b64u(key)}` : '';
-    const sel = el('select', {}, el('option', { value: '' }, 'Change...'), ...cfg.userExpiry.map((k) => el('option', { value: k }, LABELS[k] || k)));
-    sel.onchange = async () => { try { await api('file_update', { body: { id: f.id, expiry: sel.value } }); await load(false); } catch (e) { message(out, 'err', e.message); } };
-    const share = el('button', { class: 'sm' }, f.isPublic ? 'Copy link' : 'Share');
+    const copyLink = async () => { try { await navigator.clipboard.writeText(link); return true; } catch { return false; } };
     // the screen updates straight away, the server request happens in the background (and is undone if it fails)
     const setPublic = async (pub) => {
-      const before = f.isPublic; f.isPublic = pub; refresh(f);
-      try { await api('file_update', { body: { id: f.id, public: pub } }); }
-      catch (e) { f.isPublic = before; message(out, 'err', e.message); refresh(f); }
+      const before = f.isPublic; f.isPublic = pub; render();
+      try { await api('file_update', { body: { id: f.id, public: pub } }); return true; }
+      catch (e) { f.isPublic = before; render(); toast(e.message); return false; }
     };
-    share.onclick = async () => {
-      try { await navigator.clipboard.writeText(link); } catch { /* clipboard blocked, the link still works */ }
-      if (f.isPublic) { share.textContent = 'Copied'; setTimeout(() => { share.textContent = 'Copy link'; }, 1200); }
-      else setPublic(true);
+    const share = async () => {
+      const copied = await copyLink();
+      if (f.isPublic) return toast(copied ? 'Link copied' : 'Could not copy the link. Open the file to copy it from the address bar.');
+      if (await setPublic(true)) toast(copied ? 'Sharing is on. Link copied.' : 'Sharing is on.');
     };
-    const stop = el('button', { class: 'sm' }, 'Stop sharing');
-    stop.onclick = () => setPublic(false);
-    const del = el('button', { class: 'sm danger' }, 'Delete');
-    del.onclick = async () => { if (await askConfirm('Delete file?', `"${name}" will be deleted permanently. This cannot be undone.`)) { await api('file_delete', { body: { id: f.id } }); load(false); } };
-    const badge = el('span', { class: 'badge' + (f.isPublic ? ' on' : '') }, f.isPublic ? 'shared' : 'private');
-    return { sel, badge, buttons: [key ? el('a', { href: link }, el('button', { class: 'sm' }, 'Download')) : null, key ? share : null, f.isPublic ? stop : null, del] };
+    const stopSharing = async () => { if (await setPublic(false)) toast('Sharing is off. Only you can open this file.'); };
+    const expiry = async () => {
+      const sel = el('select', { 'aria-label': 'Keep for' }, ...expiryKeys().map((k) => el('option', { value: k }, LABELS[k] || k)));
+      sel.value = f.expiresAt ? '30d' : 'never';
+      if (!(await askConfirm('Change expiry', `How long should "${name}" be kept, counting from now?`, 'Save', sel, 'primary'))) return;
+      try { await api('file_update', { body: { id: f.id, expiry: sel.value } }); await load(); toast('Expiry updated'); } catch (e) { toast(e.message); }
+    };
+    const del = async () => {
+      if (!(await askConfirm('Delete file?', `"${name}" will be deleted permanently. This cannot be undone.`))) return;
+      try { await api('file_delete', { body: { id: f.id } }); items = items.filter((i) => i !== it); stats(); render(); toast('File deleted'); } catch (e) { toast(e.message); }
+    };
+    const menuItems = () => [
+      key && { icon: 'download', label: 'Download', run: () => { location.href = link; } },
+      key && { icon: 'link', label: f.isPublic ? 'Copy link' : 'Share and copy link', run: share },
+      f.isPublic && { icon: 'lock', label: 'Stop sharing', run: stopSharing },
+      { icon: 'clock', label: 'Change expiry...', run: expiry }, '-',
+      { icon: 'trash', label: 'Delete', danger: true, run: del },
+    ];
+    const iconBtn = (ic, label, onclick) => el('button', { class: 'icon', type: 'button', title: label, 'aria-label': label, onclick }, icon(ic));
+    const kebab = el('button', { class: 'icon', type: 'button', title: 'More actions', 'aria-label': 'More actions', 'aria-haspopup': 'menu' }, icon('more'));
+    kebab.onclick = () => popMenu(kebab, menuItems());
+    const context = (e) => { e.preventDefault(); popMenu({ getBoundingClientRect: () => ({}) }, menuItems(), { x: e.clientX, y: e.clientY }); };
+    return {
+      link, kebab, context,
+      quick: [key ? el('a', { class: 'icon', href: link, title: 'Download', 'aria-label': 'Download' }, icon('download')) : null,
+        key ? iconBtn('link', f.isPublic ? 'Copy link' : 'Share', share) : null, kebab],
+    };
   }
-  function row(f, name, key) {
-    const c = controls(f, name, key);
-    return el('tr', {}, el('td', { class: 'name' }, name, ' ', c.badge), el('td', {}, fmt(f.size)), el('td', {}, timeLeft(f.expiresAt)), el('td', {}, c.sel),
-      el('td', { class: 'acts' }, ...c.buttons));
+  const nameLink = (it, a) => it.key ? el('a', { href: a.link, title: it.name }, it.name) : el('span', { title: it.name }, it.name);
+  const sharing = (f) => el('span', { class: 'share' + (f.isPublic ? ' on' : '') }, icon(f.isPublic ? 'people' : 'lock', 'sm'), f.isPublic ? 'Shared' : 'Only you');
+
+  function row(it) {
+    const { f, name } = it, a = actions(it);
+    const tr = el('tr', {},
+      el('td', { class: 'c-name' }, el('div', { class: 'namecell' }, fileIcon(name), nameLink(it, a))),
+      el('td', { class: 'c-share' }, sharing(f)), el('td', { class: 'c-size' }, fmt(f.size)),
+      el('td', { class: 'c-date' }, fmtDate(f.createdAt)), el('td', { class: 'c-exp' }, timeLeft(f.expiresAt)),
+      el('td', { class: 'c-act' }, el('div', { class: 'racts' }, ...a.quick)));
+    tr.addEventListener('contextmenu', a.context);
+    return tr;
   }
-  function card(f, name, key) {
-    const c = controls(f, name, key);
-    return el('div', { class: 'fcard' }, el('div', { class: 'name' }, name), c.badge,
-      el('div', { class: 'meta' }, `${fmt(f.size)} - expires: ${timeLeft(f.expiresAt)}`),
-      el('label', { class: 'small' }, 'Keep for ', c.sel), el('div', { class: 'acts' }, ...c.buttons));
+  function card(it) {
+    const { f, name } = it, a = actions(it);
+    const c = el('div', { class: 'fcard' },
+      el('div', { class: 'thumb' }, fileIcon(name, 'xl'), el('span', { class: 'cshare' + (f.isPublic ? ' on' : ''), title: f.isPublic ? 'Shared' : 'Only you' }, icon(f.isPublic ? 'people' : 'lock', 'sm'))),
+      el('div', { class: 'cfoot' }, fileIcon(name), el('div', { class: 'ctext' }, nameLink(it, a), el('div', { class: 'cmeta' }, `${fmt(f.size)} - ${f.expiresAt ? timeLeft(f.expiresAt) + ' left' : 'No expiry'}`)), a.kebab));
+    c.addEventListener('contextmenu', a.context);
+    return c;
   }
   try { await load(); } catch (e) { message(out, 'err', e.message); }
 }
