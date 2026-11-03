@@ -53,7 +53,7 @@ button.danger-solid { background: var(--dsolid); color: var(--dsolid-text); bord
 button.danger-solid:hover:not(:disabled) { background: var(--dsolid); box-shadow: var(--shadow); opacity: .92; }
 button.sm { height: 28px; padding: 0 12px; font-size: 12.5px; }
 button:disabled { opacity: .4; cursor: not-allowed; }
-.icon { width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--muted); text-decoration: none; }
+.icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--muted); text-decoration: none; }
 .icon:hover { background: var(--hover); color: var(--text); }
 .ic { width: 24px; height: 24px; fill: currentColor; flex: none; } .ic.sm { width: 18px; height: 18px; }
 
@@ -99,7 +99,6 @@ select option { background: var(--surface); color: var(--text); }
 .check { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; font-size: 13px; color: var(--muted); cursor: pointer; }
 input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; margin-top: 2px; flex: none; cursor: pointer; }
 .actions { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
-#v-download > .actions { justify-content: center; }
 .drop { border: 2px dashed var(--line); border-radius: 16px; padding: 44px 20px; text-align: center; color: var(--muted); position: relative; cursor: pointer; transition: border-color .15s, background-color .15s; }
 .drop:hover, .drop.over { border-color: var(--accent); background: var(--surface2); }
 .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
