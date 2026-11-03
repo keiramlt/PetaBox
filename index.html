@@ -905,7 +905,7 @@ async function loginPage() {
     e.preventDefault();
     const username = norm($('l-user').value), password = $('l-pass').value;
     if (!username || !password) return message(out, 'err', 'Enter your username and password.');
-    busy(e.target, true); message(out, 'info', 'Logging in... (this takes a second on purpose)');
+    busy(e.target, true); message(out, 'info', 'Logging in...');
     try {
       const { salt } = await api('salt', { body: { username } });
       const { authKey, wrapKey } = await deriveFromPassword(password, unb64u(salt));
