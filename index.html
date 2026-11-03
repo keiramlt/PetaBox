@@ -921,7 +921,7 @@ async function loginPage() {
     if (!/^[a-z0-9_.-]{3,32}$/.test(username)) return message(out, 'err', 'Username must be 3-32 characters: a-z, 0-9, _ . -');
     if (pw.length < 10) return message(out, 'err', 'Password must be at least 10 characters.');
     if (pw !== $('s-pass2').value) return message(out, 'err', 'Passwords do not match.');
-    busy(e.target, true); message(out, 'info', 'Creating your keys... (this takes a second on purpose)');
+    busy(e.target, true); message(out, 'info', 'Creating your keys...');
     try {
       const acc = await makeAccount(pw);
       await api('register', { body: { username, ...acc.send, turnstile: ts.token() } });
