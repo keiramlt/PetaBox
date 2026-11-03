@@ -62,7 +62,6 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 #menu { display: none; }
 .brand { display: flex; align-items: center; gap: 10px; width: 232px; flex: none; font-size: 22px; color: var(--muted); text-decoration: none; padding-left: 4px; }
 .brand:hover { color: var(--text); }
-.logo { width: 30px; height: 30px; flex: none; }
 .search { display: flex; align-items: center; gap: 12px; flex: 1 1 auto; min-width: 0; max-width: 720px; height: 48px; padding: 0 16px; background: var(--surface2); border-radius: 24px; color: var(--muted); transition: background-color .15s, box-shadow .15s; }
 .search:focus-within { background: var(--surface); box-shadow: var(--shadow); }
 .search input[type=search] { flex: 1; min-width: 0; height: 100%; border: 0; border-radius: 0; background: none; color: var(--text); font: 16px var(--font); margin: 0; padding: 0; box-shadow: none; }
@@ -209,7 +208,6 @@ tr:hover .racts, tr:focus-within .racts { opacity: 1; }
   .search { height: 44px; padding: 0 12px; }
   h1 { font-size: 20px; }
   .actions button, .actions .btn { height: 40px; }
-  #brandName { display: none; }
   .c-exp { display: none; }
   .c-act { width: 56px; } .c-size { width: 96px; }
   td, th { padding: 0 8px; }
@@ -223,7 +221,7 @@ tr:hover .racts, tr:focus-within .racts { opacity: 1; }
 <body>
 <header id="top">
   <button class="icon" id="menu" type="button" aria-label="Main menu"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
-  <a class="brand" href="/"><svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="#8ab4f8" d="M12 2 21 7 12 12 3 7z"/><path fill="#4285f4" d="M3 7 12 12V22L3 17z"/><path fill="#1a73e8" d="M21 7 12 12V22L21 17z"/></svg><span id="brandName">PetaBox</span></a>
+  <a class="brand" href="/"><span id="brandName">PetaBox</span></a>
   <div class="search hidden" id="searchbox"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input type="search" id="q" placeholder="Search in My files" aria-label="Search in My files" autocomplete="off" spellcheck="false"></div>
   <div id="acct"></div>
 </header>
