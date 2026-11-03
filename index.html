@@ -74,12 +74,12 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 /* --- layout --- */
 #shell { display: flex; align-items: flex-start; min-height: calc(100vh - 64px); }
 #side { flex: none; width: 256px; padding: 0 12px 16px; }
-#app { flex: 1; min-width: 0; min-height: calc(100vh - 80px); background: var(--surface); border-radius: 16px; margin: 0 16px 16px 0; padding: 20px 24px 48px; }
+#app { flex: 1; min-width: 0; min-height: calc(100vh - 80px); min-height: calc(100dvh - 80px); background: var(--surface); border-radius: 16px; margin: 0 16px 16px 0; padding: 20px 24px 48px; }
 #app > section:not(#v-dashboard) { max-width: 600px; margin: 0 auto; }
 section:not(.hidden) { animation: fade-in .18s ease-out; }
 body.guest #shell { justify-content: center; }
 body.guest #side { display: none; }
-body.guest #app { flex: 0 1 600px; margin: 24px 16px; padding: 28px 32px 36px; }
+body.guest #app { flex: 0 1 600px; min-height: 0; margin: 24px 16px; padding: 28px 32px 36px; }
 #scrim { display: none; }
 
 .newbtn { display: inline-flex; align-items: center; gap: 12px; height: 56px; padding: 0 24px 0 16px; margin: 8px 0 16px; border-radius: 16px; background: var(--accent-bg); color: var(--on-accent-bg); font-weight: 500; text-decoration: none; box-shadow: var(--shadow); transition: box-shadow .15s; }
@@ -197,10 +197,17 @@ tr:hover .racts, tr:focus-within .racts { opacity: 1; }
   body.nav-open #side { transform: none; }
   body.nav-open #scrim { display: block; position: fixed; inset: 0; z-index: 140; background: rgba(0, 0, 0, .32); }
   #app { margin: 0 8px 8px; padding: 16px; }
-  body.guest #app { margin: 16px 8px; padding: 20px 16px 28px; }
+  body.guest #app { margin: 8px; padding: 20px 16px 28px; }
   .c-share, .c-date { display: none; }
 }
 @media (max-width: 600px) {
+  body.guest #app { flex-basis: 100%; margin: 0; border-radius: 0; padding: 8px 16px 32px; }
+  body.guest { background: var(--surface); }
+  body.guest #top { background: var(--surface); }
+  #top { gap: 4px; padding: 0 8px; }
+  .search { height: 44px; padding: 0 12px; }
+  h1 { font-size: 20px; }
+  .actions button, .actions .btn { height: 40px; }
   #brandName { display: none; }
   .c-exp { display: none; }
   .c-act { width: 56px; } .c-size { width: 96px; }
@@ -650,11 +657,16 @@ async function mountTurnstile(box) {
   return { token: () => turnstile.getResponse(id) || '', reset: () => turnstile.reset(id) };
 }
 
+// loads the captcha in the background: the rest of the page works straight away, and a blocked captcha shows a message instead of freezing the page
+const noCaptcha = { token: () => '', reset() {} };
+function mountLater(box, assign) {
+  mountTurnstile(box).then(assign).catch(() => message(box, 'err', 'The captcha could not load. Check your connection or ad blocker, then reload the page.'));
+}
+
 // --- upload page ---
 async function uploadPage() {
   const GB = 1024 ** 3, PARALLEL = 4, result = $('result');
-  const ts = await mountTurnstile($('ts'));
-  let master = user ? getMaster() : null, files = [], aborter = null, cancelled = false;
+  let ts = noCaptcha, master = user ? getMaster() : null, files = [], aborter = null, cancelled = false;
 
   $('expiry').replaceChildren(...(user ? expiryKeys() : cfg.anonExpiry).map((k) => el('option', { value: k }, LABELS[k] || k)));
   $('expiry').value = user ? 'never' : '1d';   // signed in: keep forever unless you pick something else
@@ -663,6 +675,8 @@ async function uploadPage() {
     $('pubRow').classList.remove('hidden');
   } else $('up-sub').textContent = `Files are encrypted in your browser before they leave your device. Up to ${cfg.maxAnon / GB} GB per file, kept for up to 1 month. Log in for ${cfg.maxUser / GB} GB files and unlimited storage time.`;
 
+  if (matchMedia('(hover: none)').matches) { document.querySelector('.drop-title').textContent = 'Choose files'; $('drop').lastElementChild.previousElementSibling.textContent = 'tap here to browse your device'; }   // no dragging on phones and tablets
+  mountLater($('ts'), (t) => { ts = t; });
   const setFiles = (list) => { files = [...list]; $('picked').textContent = files.map((f) => `${f.name} (${fmt(f.size)})`).join(', '); };
   $('drop').addEventListener('dragover', (e) => { e.preventDefault(); $('drop').classList.add('over'); });$('drop').addEventListener('dragleave', () => $('drop').classList.remove('over'));$('drop').addEventListener('drop', (e) => { e.preventDefault(); $('drop').classList.remove('over'); setFiles(e.dataTransfer.files); });$('file').addEventListener('change', () => setFiles($('file').files));$('cancel').addEventListener('click', () => { cancelled = true; aborter?.abort(); });
 
@@ -879,7 +893,8 @@ async function downloadPage() {
 // --- login / signup / recover ---
 async function loginPage() {
   if (user && getMaster()) { location.replace('/?dashboard'); return; }
-  const out = $('l-out'), panes = ['login', 'signup', 'recover'], ts = await mountTurnstile($('s-ts'));
+  const out = $('l-out'), panes = ['login', 'signup', 'recover']; let ts = noCaptcha;
+  mountLater($('s-ts'), (t) => { ts = t; });
   const show = (tab) => { for (const p of panes) $(p).classList.toggle('hidden', p !== tab); $('recovery').classList.add('hidden'); for (const b of $('tabs').children) b.classList.toggle('active', b.dataset.tab === tab); out.replaceChildren(); };
   $('tabs').addEventListener('click', (e) => e.target.dataset?.tab && show(e.target.dataset.tab));
   if (location.hash === '#signup') show('signup');
